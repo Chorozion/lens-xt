@@ -70,6 +70,10 @@ class RetrievedLocus:
     locus_id: Optional[str] = None
     """The LTMi-XT locus id (for provenance)."""
 
+    lattice: Optional[tuple[int, int, int]] = None
+    """3D lattice coord of this locus in its source bundle. Populated from
+    bundle's lattice field; computed from breadcrumb (BLAKE2b) as fallback."""
+
 
 # ─── Tokenizer protocol ──────────────────────────────────────────────────
 
@@ -169,6 +173,17 @@ class ResolvedLock:
     decoded_text: str = ""
     """The string that was tokenized (post-variable-substitution)."""
 
+    # ── LTMi-XT priors (populated for retrieval-sourced locks) ────────
+    relevance_score: float = 1.0
+    """Per-lock retrieval relevance in [0, 1]. 1.0 for literal locks (full
+    confidence); equal to the retrieval score for locus / retrieval[N] locks.
+    Consumed by LTMi-aware Triple Attention to weight Path 3 attention."""
+
+    lattice_coord: Optional[tuple[int, int, int]] = None
+    """3D lattice coord of the source locus, when applicable. None for
+    literal locks (which have no lattice address). Consumed by LTMi-aware
+    Triple Attention as positional bias on Path 3 K vectors."""
+
 
 @dataclass
 class ResolutionContext:
@@ -227,14 +242,53 @@ def resolved_locks_to_position_map(
     return out
 
 
+def resolved_locks_to_score_map(
+    resolved: list[ResolvedLock],
+) -> dict[int, float]:
+    """Flatten resolved locks into a position→retrieval_score map.
+
+    Each token position inherits its lock's relevance_score (literal locks =
+    1.0; retrieval-sourced locks = the retrieval scorer's output). Empty
+    when no locks have non-trivial scores.
+
+    Consumed by LTMi-aware backends as GenerationRequest.locked_position_scores.
+    """
+    out: dict[int, float] = {}
+    for rl in resolved:
+        for offset in range(len(rl.token_ids)):
+            out[rl.start + offset] = float(rl.relevance_score)
+    return out
+
+
+def resolved_locks_to_lattice_map(
+    resolved: list[ResolvedLock],
+) -> dict[int, tuple[int, int, int]]:
+    """Flatten resolved locks into a position→lattice_coord map.
+
+    Only retrieval-sourced locks (locus / retrieval[N]) carry lattice coords;
+    literal locks return no entries. Consumed by LTMi-aware backends as
+    GenerationRequest.locked_position_lattice.
+    """
+    out: dict[int, tuple[int, int, int]] = {}
+    for rl in resolved:
+        if rl.lattice_coord is None:
+            continue
+        for offset in range(len(rl.token_ids)):
+            out[rl.start + offset] = rl.lattice_coord
+    return out
+
+
 # ─── Per-lock resolution ─────────────────────────────────────────────────
 
 def _resolve_single_lock(
     lock: Lock, idx: int, ctx: ResolutionContext
 ) -> ResolvedLock:
     """Resolve a single lock to its concrete tokens and positions."""
-    # 1. Resolve source to a string
-    text, source_kind, source_desc = _resolve_source(lock.source, idx, ctx)
+    # 1. Resolve source to (text, kind, desc, score, lattice). Retrieval sources
+    #    additionally carry per-lock LTMi-XT priors (score + lattice coord).
+    text, source_kind, source_desc, relevance_score, lattice_coord = _resolve_source(
+        lock.source, idx, ctx
+    )
 
     # 2. Substitute variables
     try:
@@ -263,18 +317,34 @@ def _resolve_single_lock(
         source_kind=source_kind,
         source_description=source_desc,
         decoded_text=text,
+        relevance_score=relevance_score,
+        lattice_coord=lattice_coord,
     )
 
 
 def _resolve_source(
     source: LockSource, idx: int, ctx: ResolutionContext
-) -> tuple[str, str, str]:
-    """Resolve a LockSource to (text, kind, human_description)."""
+) -> tuple[str, str, str, float, Optional[tuple[int, int, int]]]:
+    """Resolve a LockSource to (text, kind, description, score, lattice_coord).
+
+    Returns:
+        text:          the string to be tokenized
+        kind:          one of 'literal' | 'locus' | 'retrieval' | 'compose'
+        description:   human-readable provenance string
+        score:         retrieval relevance in [0, 1]; 1.0 for literal
+        lattice_coord: 3D lattice tuple for retrieval-sourced locks, else None
+    """
     if isinstance(source, LiteralSource):
-        return source.content, "literal", f"literal[{len(source.content)} chars]"
+        return (
+            source.content,
+            "literal",
+            f"literal[{len(source.content)} chars]",
+            1.0,
+            None,
+        )
 
     if isinstance(source, LocusSource):
-        text = lookup_locus_by_breadcrumb(
+        text, lattice = _lookup_locus_with_lattice(
             source.breadcrumb_parts, ctx.loaded_bundles
         )
         if text is None:
@@ -282,7 +352,15 @@ def _resolve_source(
                 f"locks[{idx}]: locus({source.breadcrumb!r}) not found in any "
                 f"loaded bundle ({len(ctx.loaded_bundles)} bundle(s) loaded)"
             )
-        return text, "locus", f"locus({source.breadcrumb})"
+        # locus() locks are by-name lookups — confidence 1.0 (the spec author
+        # asserted they want THIS specific locus).
+        return (
+            text,
+            "locus",
+            f"locus({source.breadcrumb})",
+            1.0,
+            lattice,
+        )
 
     if isinstance(source, RetrievalRefSource):
         if source.rank >= len(ctx.retrieved_loci):
@@ -291,7 +369,16 @@ def _resolve_source(
                 f"{len(ctx.retrieved_loci)} loci were retrieved"
             )
         rl = ctx.retrieved_loci[source.rank]
-        return rl.statement, "retrieval", f"retrieval[{source.rank}]: {':'.join(rl.breadcrumb)}"
+        # Clamp score to [0, 1] (lattice walk scorer can produce values
+        # slightly outside this range due to additive composition).
+        score = max(0.0, min(1.0, float(rl.score)))
+        return (
+            rl.statement,
+            "retrieval",
+            f"retrieval[{source.rank}]: {':'.join(rl.breadcrumb)}",
+            score,
+            rl.lattice,
+        )
 
     if isinstance(source, ComposeSource):
         # v0.1: compose is parsed but not resolved — defer to v0.2
@@ -303,6 +390,41 @@ def _resolve_source(
     raise LockResolutionError(
         f"locks[{idx}]: unrecognized lock source type {type(source).__name__}"
     )
+
+
+def _lookup_locus_with_lattice(
+    breadcrumb: list[str],
+    bundles: list[dict[str, Any]],
+) -> tuple[Optional[str], Optional[tuple[int, int, int]]]:
+    """Like lookup_locus_by_breadcrumb but also returns the lattice coord.
+
+    Falls back to a canonical BLAKE2b hash of the breadcrumb if the matched
+    locus has no lattice field (older bundle versions).
+    """
+    target = [p.lower() for p in breadcrumb]
+    for bundle in bundles:
+        for locus in bundle.get("loci", []):
+            bc = [p.lower() for p in (locus.get("breadcrumb") or [])]
+            if len(bc) >= len(target) and bc[: len(target)] == target:
+                statement = locus.get("statement")
+                lattice_raw = locus.get("lattice")
+                lattice: Optional[tuple[int, int, int]] = None
+                if isinstance(lattice_raw, (list, tuple)) and len(lattice_raw) == 3:
+                    try:
+                        lattice = (int(lattice_raw[0]), int(lattice_raw[1]), int(lattice_raw[2]))
+                    except (TypeError, ValueError):
+                        lattice = None
+                if lattice is None:
+                    # Compute the canonical hash as a fallback for old bundles
+                    full_bc = locus.get("breadcrumb") or []
+                    if len(full_bc) == 4:
+                        try:
+                            from .retrieval_lattice import lattice_for_breadcrumb
+                            lattice = lattice_for_breadcrumb(full_bc)
+                        except Exception:
+                            lattice = None
+                return statement, lattice
+    return None, None
 
 
 def _resolve_range(

@@ -252,6 +252,7 @@ def retrieve_top_k_lattice(
             score=score,
             bundle_path=None,
             locus_id=locus.get("id"),
+            lattice=coord,
         )
-        for i, (score, locus, _coord) in enumerate(top)
+        for i, (score, locus, coord) in enumerate(top)
     ]

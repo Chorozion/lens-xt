@@ -172,6 +172,20 @@ class GenerationRequest:
     ensure these positions in the output match the specified token IDs at
     the strongest guarantee level it can provide."""
 
+    # ── LTMi-XT priors (optional; backends with LTMi-aware Triple Attention
+    # consume these to weight Path 3 attention by retrieval confidence and
+    # to attach lattice-coordinate positional information to anchor keys).
+    # Backends that don't understand them MUST ignore them. ───────────
+    locked_position_scores: dict[int, float] = field(default_factory=dict)
+    """Map of locked position -> retrieval relevance in [0, 1]. 1.0 for
+    literal locks; populated from LTMi-XT retrieval scores for locus /
+    retrieval[N] locks. Empty when no retrieval was used."""
+
+    locked_position_lattice: dict[int, tuple[int, int, int]] = field(default_factory=dict)
+    """Map of locked position -> 3D lattice coord of the source locus.
+    Populated only for retrieval-sourced locks (locus / retrieval[N]).
+    Coords are in the LTMi-XT v0.1 canonical 64³ space."""
+
     prompt_token_ids: list[int] = field(default_factory=list)
     """Tokenized prompt that precedes the answer slot. The backend conditions
     on this but does not generate it."""

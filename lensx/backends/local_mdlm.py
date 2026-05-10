@@ -95,13 +95,20 @@ class LocalMDLMBackend(Backend):
         weights_path: Optional[str] = None,
         device: Optional[str] = None,
         dtype: str = "bf16",
+        checkpoint: str = "v1.5",
     ) -> None:
+        """checkpoint: one of "v1" (epoch-5 base, ~0.008 corpus_overlap) or
+        "v1.5" (continued-pretrain step500 on anchor-token-masked LTMi-XT
+        data, ~0.481 corpus_overlap = 59x lift). Default v1.5 since it's
+        the empirical winner; falls back to v1 if v1.5 weights aren't on disk.
+        """
         # Distinguish "not specified" (use defaults) from "explicitly empty"
         # (no paths — backend should report unavailable)
         if cassandra_paths is None:
             self._cassandra_paths = _resolve_cassandra_paths()
         else:
             self._cassandra_paths = cassandra_paths
+        self._checkpoint = checkpoint
         self._weights_path = weights_path
         self._device = device
         self._dtype_name = dtype
@@ -172,7 +179,15 @@ class LocalMDLMBackend(Backend):
         dtype = dtype_map.get(self._dtype_name, torch.bfloat16)
 
         try:
-            self._model, self._tokenizer, self._mask_id = load("v1", dtype=dtype)
+            try:
+                self._model, self._tokenizer, self._mask_id = load(self._checkpoint, dtype=dtype)
+            except (KeyError, AssertionError, FileNotFoundError):
+                # v1.5 not on this machine — fall back to v1
+                if self._checkpoint != "v1":
+                    print(f"[load] {self._checkpoint} unavailable, falling back to v1")
+                    self._model, self._tokenizer, self._mask_id = load("v1", dtype=dtype)
+                else:
+                    raise
         except FileNotFoundError as e:
             raise BackendUnavailableError(
                 f"local_mdlm backend cannot load weights: {e}"

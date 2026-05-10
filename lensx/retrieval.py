@@ -137,8 +137,27 @@ def retrieve_top_k(
             breadcrumb=list(locus.get("breadcrumb") or []),
             statement=locus.get("statement") or "",
             score=score,
-            bundle_path=None,  # could plumb through if needed
+            bundle_path=None,
             locus_id=locus.get("id"),
+            lattice=_lattice_from_locus(locus),
         )
         for i, (score, locus, bundle_idx) in enumerate(top)
     ]
+
+
+def _lattice_from_locus(locus: dict[str, Any]) -> Optional[tuple[int, int, int]]:
+    """Pull the 3D lattice coord from a bundle locus, with fallback to canonical hash."""
+    raw = locus.get("lattice")
+    if isinstance(raw, (list, tuple)) and len(raw) == 3:
+        try:
+            return (int(raw[0]), int(raw[1]), int(raw[2]))
+        except (TypeError, ValueError):
+            pass
+    bc = locus.get("breadcrumb") or []
+    if len(bc) == 4:
+        try:
+            from .retrieval_lattice import lattice_for_breadcrumb
+            return lattice_for_breadcrumb(list(bc))
+        except Exception:
+            pass
+    return None

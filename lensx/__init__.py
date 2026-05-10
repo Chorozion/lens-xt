@@ -37,7 +37,7 @@ from .parser import parse, parse_file, ParseError
 from .validator import validate, ValidationError
 from .sdk import LensX, LensXResult, constrain, locks
 
-__version__ = "0.1.0a1"
+__version__ = "0.1.0b1"
 __all__ = [
     # High-level SDK (recommended)
     "LensX",

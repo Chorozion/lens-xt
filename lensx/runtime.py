@@ -30,6 +30,8 @@ from .lock_resolver import (
     RetrievedLocus,
     resolve_locks,
     resolved_locks_to_position_map,
+    resolved_locks_to_score_map,
+    resolved_locks_to_lattice_map,
     LockResolutionError,
 )
 from .retrieval import (
@@ -161,6 +163,10 @@ def run(
         raise RuntimeError_(f"lock resolution failed: {e}") from e
 
     locked_positions = resolved_locks_to_position_map(resolved)
+    # LTMi-XT priors — populated when retrieval-sourced locks exist; backends
+    # that don't understand them must ignore them (see GenerationRequest docs)
+    locked_position_scores = resolved_locks_to_score_map(resolved)
+    locked_position_lattice = resolved_locks_to_lattice_map(resolved)
 
     # Stage 6: Build generation request
     prompt_token_ids = _build_prompt(doc, variables, tokenizer)
@@ -169,6 +175,8 @@ def run(
         adapter_paths=[a.source for a in doc.adapters],
         adapter_blend_weights=[a.blend_weight for a in doc.adapters],
         locked_positions=locked_positions,
+        locked_position_scores=locked_position_scores,
+        locked_position_lattice=locked_position_lattice,
         prompt_token_ids=prompt_token_ids,
         answer_length=doc.generation.total_length,
         unmask_steps=doc.generation.unmask_steps,

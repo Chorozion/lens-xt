@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lens-xt"
-version = "0.1.0a1"
+version = "0.1.0b1"
 description = "A declarative specification language for deterministically constrained generation in discrete-sequence diffusion models"
 readme = "README.md"
 license = { text = "Apache-2.0" }
