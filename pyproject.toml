@@ -54,16 +54,25 @@ openai = [
 anthropic = [
     "anthropic>=0.30",
 ]
+server = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.5",
+]
 all = [
     "torch>=2.1",
     "tokenizers>=0.15",
     "openai>=1.40",
     "anthropic>=0.30",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.5",
 ]
 dev = [
     "pytest>=7.0",
     "ruff>=0.4",
     "mypy>=1.10",
+    "httpx>=0.27",
 ]
 
 [project.scripts]

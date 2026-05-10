@@ -298,6 +298,55 @@ def run(
                 click.echo(click.style(f"  {k}: {v}", dim=True))
 
 
+@main.command()
+@click.option("--host", default="127.0.0.1", show_default=True, help="Bind address.")
+@click.option("--port", default=8787, show_default=True, type=int, help="TCP port.")
+@click.option("--reload", is_flag=True, help="Reload on source changes (dev only).")
+@click.option("--workers", default=1, show_default=True, type=int, help="Worker count.")
+def serve(host: str, port: int, reload: bool, workers: int) -> None:
+    """Start the LENS-XT HTTP API server.
+
+    Requires the [server] extras: pip install lens-xt[server]
+    """
+    try:
+        import uvicorn  # type: ignore
+    except ImportError:
+        click.echo(
+            click.style(
+                "lensx serve requires fastapi and uvicorn. "
+                "Install with: pip install lens-xt[server]",
+                fg="red",
+            ),
+            err=True,
+        )
+        sys.exit(1)
+
+    click.echo(click.style(
+        f"LENS-XT API server starting on http://{host}:{port}", fg="cyan"
+    ))
+    click.echo(click.style(
+        "  GET  /health             liveness probe", dim=True
+    ))
+    click.echo(click.style(
+        "  GET  /v1/version         version + available backends", dim=True
+    ))
+    click.echo(click.style(
+        "  POST /v1/parse           parse + validate a spec", dim=True
+    ))
+    click.echo(click.style(
+        "  POST /v1/run             execute a spec end-to-end", dim=True
+    ))
+    click.echo("")
+
+    uvicorn.run(
+        "lensx.server:app",
+        host=host,
+        port=port,
+        reload=reload,
+        workers=workers if not reload else 1,
+    )
+
+
 def _error(message: str, *, json_output: bool, exit_code: int) -> None:
     """Print an error and exit. JSON-mode emits a structured error envelope."""
     if json_output:
