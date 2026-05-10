@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-label="LENS-XT — declarative constrained generation for masked-diffusion language models">
+  <defs>
+    <!-- Background radial -->
+    <radialGradient id="bgGlow1" cx="35%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00D4FF" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#00D4FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bgGlow2" cx="80%" cy="60%" r="45%">
+      <stop offset="0%" stop-color="#FFD93D" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#FFD93D" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Grid pattern -->
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#00D4FF" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+
+    <!-- Headline gradient -->
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00D4FF"/>
+      <stop offset="55%" stop-color="#9BFFE8"/>
+      <stop offset="100%" stop-color="#FFD93D"/>
+    </linearGradient>
+
+    <!-- Locked-token highlight -->
+    <linearGradient id="lockGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00D4FF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0066FF" stop-opacity="0.85"/>
+    </linearGradient>
+
+    <!-- Anchor accent (gold) -->
+    <linearGradient id="anchorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFD93D" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF9500" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="360" fill="#050A15"/>
+  <rect width="1280" height="360" fill="url(#grid)"/>
+  <rect width="1280" height="360" fill="url(#bgGlow1)"/>
+  <rect width="1280" height="360" fill="url(#bgGlow2)"/>
+
+  <!-- Status pill -->
+  <g transform="translate(72, 78)">
+    <rect x="0" y="0" width="232" height="26" rx="13" fill="#00D4FF" fill-opacity="0.06" stroke="#00D4FF" stroke-opacity="0.30" stroke-width="1"/>
+    <text x="116" y="18" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" letter-spacing="3" fill="#00D4FF" font-weight="600">v0.1.0a1 · APACHE 2.0</text>
+  </g>
+
+  <!-- Headline -->
+  <text x="72" y="180" font-family="Inter, 'Segoe UI', system-ui, sans-serif" font-size="92" font-weight="900" letter-spacing="-2" fill="url(#textGrad)">LENS-XT</text>
+
+  <!-- Subhead -->
+  <text x="72" y="220" font-family="Inter, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="600" fill="#FFFFFF">Declarative constrained generation for masked-diffusion LMs</text>
+  <text x="72" y="248" font-family="Inter, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#9CA3AF">YAML in. Token-position-locked output out. DETERMINISTIC guarantee.</text>
+
+  <!-- Token strip — visualises an answer slot with locked anchors -->
+  <g transform="translate(72, 282)">
+    <text x="0" y="-6" font-family="ui-monospace, monospace" font-size="9" letter-spacing="2" fill="#6B7280">ANSWER SLOT · LOCKED ANCHORS</text>
+    <!-- Position cells -->
+    <g>
+      <!-- Locked (cyan) -->
+      <rect x="0"   y="0" width="34" height="22" rx="3" fill="url(#lockGrad)"/>
+      <rect x="38"  y="0" width="34" height="22" rx="3" fill="url(#lockGrad)"/>
+      <rect x="76"  y="0" width="34" height="22" rx="3" fill="url(#lockGrad)"/>
+      <!-- Mask (faded) -->
+      <rect x="114" y="0" width="34" height="22" rx="3" fill="#1F2937" stroke="#374151" stroke-width="1"/>
+      <rect x="152" y="0" width="34" height="22" rx="3" fill="#1F2937" stroke="#374151" stroke-width="1"/>
+      <rect x="190" y="0" width="34" height="22" rx="3" fill="#1F2937" stroke="#374151" stroke-width="1"/>
+      <rect x="228" y="0" width="34" height="22" rx="3" fill="#1F2937" stroke="#374151" stroke-width="1"/>
+      <!-- Anchor (gold) -->
+      <rect x="266" y="0" width="34" height="22" rx="3" fill="url(#anchorGrad)"/>
+      <rect x="304" y="0" width="34" height="22" rx="3" fill="url(#anchorGrad)"/>
+      <!-- Mask -->
+      <rect x="342" y="0" width="34" height="22" rx="3" fill="#1F2937" stroke="#374151" stroke-width="1"/>
+      <rect x="380" y="0" width="34" height="22" rx="3" fill="#1F2937" stroke="#374151" stroke-width="1"/>
+      <rect x="418" y="0" width="34" height="22" rx="3" fill="#1F2937" stroke="#374151" stroke-width="1"/>
+      <!-- Locked (cyan) tail -->
+      <rect x="456" y="0" width="34" height="22" rx="3" fill="url(#lockGrad)"/>
+      <rect x="494" y="0" width="34" height="22" rx="3" fill="url(#lockGrad)"/>
+    </g>
+    <!-- Legend -->
+    <g transform="translate(560, 4)" font-family="ui-monospace, monospace" font-size="10" fill="#9CA3AF">
+      <rect x="0"   y="0" width="10" height="10" fill="url(#lockGrad)"/>
+      <text x="16"  y="9">literal lock</text>
+      <rect x="106" y="0" width="10" height="10" fill="url(#anchorGrad)"/>
+      <text x="122" y="9">retrieval anchor</text>
+      <rect x="234" y="0" width="10" height="10" fill="#1F2937" stroke="#374151" stroke-width="1"/>
+      <text x="250" y="9">[MASK] (model fills)</text>
+    </g>
+  </g>
+
+  <!-- Right side: pipeline mini-diagram -->
+  <g transform="translate(880, 100)" font-family="ui-monospace, 'SF Mono', monospace" font-size="11" fill="#E5E7EB">
+    <text x="0" y="0" letter-spacing="2" font-size="9" fill="#6B7280">PIPELINE</text>
+
+    <!-- spec.lensx -->
+    <rect x="0" y="14" width="120" height="32" rx="4" fill="#0B1220" stroke="#00D4FF" stroke-opacity="0.40" stroke-width="1"/>
+    <text x="60" y="34" text-anchor="middle" fill="#00D4FF">spec.lensx</text>
+
+    <text x="130" y="35" fill="#4B5563" font-size="14">→</text>
+
+    <!-- runtime -->
+    <rect x="148" y="14" width="120" height="32" rx="4" fill="#0B1220" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="1"/>
+    <text x="208" y="34" text-anchor="middle" fill="#E5E7EB">runtime</text>
+
+    <text x="278" y="35" fill="#4B5563" font-size="14">→</text>
+
+    <!-- forced anchors -->
+    <rect x="0" y="62" width="120" height="32" rx="4" fill="#0B1220" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="1"/>
+    <text x="60" y="82" text-anchor="middle" fill="#E5E7EB">resolve_locks</text>
+
+    <text x="130" y="83" fill="#4B5563" font-size="14">→</text>
+
+    <!-- Cassandra -->
+    <rect x="148" y="62" width="120" height="32" rx="4" fill="#0B1220" stroke="#FFD93D" stroke-opacity="0.40" stroke-width="1"/>
+    <text x="208" y="82" text-anchor="middle" fill="#FFD93D">Cassandra T1.5</text>
+
+    <!-- guarantee badge -->
+    <rect x="0" y="118" width="268" height="36" rx="4" fill="#00D4FF" fill-opacity="0.05" stroke="#00D4FF" stroke-opacity="0.30" stroke-width="1"/>
+    <text x="134" y="140" text-anchor="middle" font-size="11" fill="#00D4FF" letter-spacing="2">DETERMINISTIC · ANCHORS PRESERVED 1.000</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="72" y="338" font-family="ui-monospace, monospace" font-size="10" letter-spacing="2" fill="#6B7280">SOPHIA XT · github.com/Chorozion/lens-xt · sophiaxt.com</text>
+</svg>
