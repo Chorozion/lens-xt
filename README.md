@@ -67,14 +67,14 @@ LENS-XT separates *what to constrain* (the spec, CC BY 4.0) from *how to enforce
 | LTMi-XT lattice-walk retrieval (v0.2 — BLAKE2b spec §2.4 compliant) | ✅ shipped |
 | Reasoning scaffold runtime (multi-stage) | ✅ shipped |
 | Local MDLM backend (Cassandra T1.5) | ✅ shipped |
+| OpenAI API backend (logit-bias + retry, BEST_EFFORT guarantee) | ✅ shipped |
 | Runtime orchestrator + CLI | ✅ shipped |
 | Specification document | ✅ [Read the spec](https://sophiaxt.com/lens-x-spec.pdf) |
-| OpenAI API backend (logit-bias mode) | 🚧 next |
+| Python SDK three-line drop-in | ✅ shipped |
+| TypeScript SDK (`@sophiaxt/lens-xt`) | ✅ shipped |
+| HTTP API server (FastAPI) | ✅ shipped |
 | Anthropic API backend | 📋 planned |
 | Mercury 2 native backend | 📋 pending Inception API support |
-| HTTP API | 📋 planned |
-| Python SDK three-line drop-in | 📋 planned |
-| TypeScript SDK | 📋 planned |
 
 **Tests:** 168 unit + 8 backend tests passing, including a live integration against Cassandra T1.5 with `anchor_preservation_rate=1.0`.
 

@@ -283,6 +283,10 @@ def _import_known_backends() -> None:
         from .backends import local_mdlm  # noqa: F401
     except Exception:
         pass
+    try:
+        from .backends import openai_backend  # noqa: F401
+    except Exception:
+        pass
 
 
 def _select_backend(

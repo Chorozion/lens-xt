@@ -50,6 +50,7 @@ local = [
 ]
 openai = [
     "openai>=1.40",
+    "tiktoken>=0.7",
 ]
 anthropic = [
     "anthropic>=0.30",
@@ -63,6 +64,7 @@ all = [
     "torch>=2.1",
     "tokenizers>=0.15",
     "openai>=1.40",
+    "tiktoken>=0.7",
     "anthropic>=0.30",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
@@ -87,6 +89,12 @@ Specification = "https://sophiaxt.com/lens-x-spec.pdf"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["lensx*", "lens_xt*"]
+
+[tool.pytest.ini_options]
+markers = [
+    "live: tests that hit a real external API (skipped by default; opt in via -m live)",
+    "integration: tests that load real heavy models (skipped by default)",
+]
 
 [tool.ruff]
 line-length = 100
