@@ -1,0 +1,66 @@
+{
+  "name": "@sophiaxt/lens-xt",
+  "version": "0.1.0-alpha.1",
+  "description": "Declarative spec language for token-level deterministic generation in masked-diffusion LMs — Node SDK",
+  "keywords": [
+    "language-model",
+    "diffusion",
+    "masked-diffusion",
+    "constrained-generation",
+    "lens-xt",
+    "anchor-token-masking",
+    "sophia-xt"
+  ],
+  "homepage": "https://sophiaxt.com/lens-x-spec",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Chorozion/lens-xt.git",
+    "directory": "sdk-node"
+  },
+  "bugs": {
+    "url": "https://github.com/Chorozion/lens-xt/issues"
+  },
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Thomas Garren",
+    "email": "thomas@sophiaxt.com",
+    "url": "https://sophiaxt.com"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.5.0"
+  },
+  "peerDependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
+}

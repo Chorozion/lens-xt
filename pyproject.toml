@@ -77,7 +77,7 @@ Specification = "https://sophiaxt.com/lens-x-spec.pdf"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["lensx*"]
+include = ["lensx*", "lens_xt*"]
 
 [tool.ruff]
 line-length = 100

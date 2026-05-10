@@ -187,22 +187,25 @@ def explain(path: Path) -> None:
 @click.option("--var", "variables", multiple=True, help="Set a variable: --var key=value")
 @click.option("--show-provenance", is_flag=True, help="Print provenance and metrics.")
 @click.option("--skip-validation", is_flag=True, help="Skip post-generation validation.")
+@click.option("--json", "json_output", is_flag=True, help="Emit a single JSON object on stdout (machine-readable).")
 def run(
     path: Path,
     backend: str | None,
     variables: tuple[str, ...],
     show_provenance: bool,
     skip_validation: bool,
+    json_output: bool,
 ) -> None:
     """Execute a .lensx spec end-to-end."""
     # Parse --var key=value pairs
     var_dict: dict[str, str] = {}
     for v in variables:
         if "=" not in v:
-            click.echo(click.style(
-                f"--var must be in key=value format, got: {v!r}", fg="red"
-            ), err=True)
-            sys.exit(1)
+            _error(
+                f"--var must be in key=value format, got: {v!r}",
+                json_output=json_output,
+                exit_code=1,
+            )
         k, _, val = v.partition("=")
         var_dict[k.strip()] = val
 
@@ -210,8 +213,11 @@ def run(
     try:
         from .runtime import run as runtime_run, RuntimeError_
     except ImportError as e:
-        click.echo(click.style(f"runtime import failed: {e}", fg="red"), err=True)
-        sys.exit(1)
+        _error(
+            f"runtime import failed: {e}",
+            json_output=json_output,
+            exit_code=1,
+        )
 
     try:
         result = runtime_run(
@@ -221,8 +227,37 @@ def run(
             skip_validation=skip_validation,
         )
     except Exception as e:
-        click.echo(click.style(f"runtime error: {e}", fg="red"), err=True)
-        sys.exit(1)
+        _error(
+            f"runtime error: {e}",
+            json_output=json_output,
+            exit_code=1,
+        )
+
+    # JSON output mode — single object, all metadata, no decoration
+    if json_output:
+        import json as _json
+        payload = {
+            "ok": True,
+            "text": result.text,
+            "backend_name": result.backend_name,
+            "achieved_guarantee": result.achieved_guarantee.value,
+            "locked_positions_preserved": result.locked_positions_preserved,
+            "validation_passed": result.validation_passed,
+            "validation_failures": list(result.validation_failures),
+            "retrieved_loci": [
+                {
+                    "rank": rl.rank,
+                    "breadcrumb": list(rl.breadcrumb),
+                    "statement": rl.statement,
+                    "score": rl.score,
+                    "locus_id": rl.locus_id,
+                }
+                for rl in result.retrieved_loci
+            ],
+            "metrics": dict(result.metrics),
+        }
+        click.echo(_json.dumps(payload, ensure_ascii=False))
+        return
 
     # Print the generated text
     click.echo(result.text)
@@ -261,6 +296,16 @@ def run(
             click.echo(click.style("metrics:", fg="cyan"))
             for k, v in result.metrics.items():
                 click.echo(click.style(f"  {k}: {v}", dim=True))
+
+
+def _error(message: str, *, json_output: bool, exit_code: int) -> None:
+    """Print an error and exit. JSON-mode emits a structured error envelope."""
+    if json_output:
+        import json as _json
+        click.echo(_json.dumps({"ok": False, "error": message}))
+    else:
+        click.echo(click.style(message, fg="red"), err=True)
+    sys.exit(exit_code)
 
 
 def _print_doc_details(doc: LensXDocument) -> None:
