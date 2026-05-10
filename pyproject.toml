@@ -1,0 +1,88 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lens-xt"
+version = "0.1.0a1"
+description = "A declarative specification language for deterministically constrained generation in discrete-sequence diffusion models"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Thomas Garren", email = "thomas@sophiaxt.com" },
+]
+maintainers = [
+    { name = "Thomas Garren", email = "thomas@sophiaxt.com" },
+]
+keywords = [
+    "language-model",
+    "diffusion",
+    "masked-diffusion",
+    "constrained-generation",
+    "anchor-token-masking",
+    "forced-anchor-decoding",
+    "ltmi-xt",
+    "specification-language",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "pyyaml>=6.0",
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+local = [
+    "torch>=2.1",
+    "tokenizers>=0.15",
+]
+openai = [
+    "openai>=1.40",
+]
+anthropic = [
+    "anthropic>=0.30",
+]
+all = [
+    "torch>=2.1",
+    "tokenizers>=0.15",
+    "openai>=1.40",
+    "anthropic>=0.30",
+]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+lensx = "lensx.cli:main"
+
+[project.urls]
+Homepage = "https://sophiaxt.com/lens-x-spec"
+Repository = "https://github.com/Chorozion/lens-xt"
+"Bug Tracker" = "https://github.com/Chorozion/lens-xt/issues"
+Specification = "https://sophiaxt.com/lens-x-spec.pdf"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lensx*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.mypy]
+python_version = "3.9"
+strict = true

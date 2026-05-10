@@ -1,0 +1,82 @@
+# Reasoning-extension example: structured medical diagnostic reasoning.
+#
+# The reasoning scaffold forces the model through five fixed stages, each
+# with a locked prefix that the model cannot skip. Per-stage validation
+# rules ensure each step actually does what it claims.
+#
+# This is the LENS-XT equivalent of chain-of-thought + verifier + structured
+# output, but declarative and cross-paradigm. Works on any backend.
+#
+# Usage:
+#   lensx parse examples/reasoning_diagnostic.lensx
+#   lensx explain examples/reasoning_diagnostic.lensx
+#   lensx run examples/reasoning_diagnostic.lensx \
+#     --var symptoms="chest pain on exertion, age 52, smoker"
+
+version: "0.1"
+
+base:
+  model: "cassandra-t1.5"
+
+adapter:
+  source: "registry/medical-cardiology-v3.lora"
+
+retrieval:
+  bundles:
+    - "corpora/cardiology.ltmi"
+  query: "${symptoms}"
+  top_k: 3
+
+reasoning:
+  enabled: true
+  scaffold:
+    - stage: parse_symptoms
+      prefix: "Patient symptoms:"
+      length: 32
+      generate: model
+      validate:
+        must_contain: ["symptom"]
+
+    - stage: retrieve_relevant
+      prefix: "Relevant differential diagnoses:"
+      length: 80
+      generate: retrieve
+
+    - stage: rank_likelihood
+      prefix: "Ranked by likelihood:"
+      length: 64
+      generate: model
+      validate:
+        must_contain: ["1.", "2."]
+
+    - stage: recommend_workup
+      prefix: "Recommended diagnostic workup:"
+      length: 48
+      generate: model
+
+    - stage: safety_check
+      prefix: "Safety considerations:"
+      length: 32
+      generate: model
+      validate:
+        must_contain: ["consult"]
+
+  on_stage_failure: retry_stage
+  max_retries: 2
+
+generation:
+  total_length: 320
+  unmask_steps: 16
+  temperature: 0.7
+
+execution:
+  mode: auto
+  preferred_backend: "cassandra-t1.5"
+  guarantee_level: best_effort
+
+output:
+  format: markdown
+  include_provenance: true
+  include_metrics:
+    - corpus_overlap
+    - anchor_preservation_rate

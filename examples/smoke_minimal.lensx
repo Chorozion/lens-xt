@@ -1,0 +1,24 @@
+version: "0.1"
+
+# Minimal smoke spec — no retrieval, no adapters, no scaffold.
+# Verifies the runtime can drive Cassandra T1.5 end-to-end.
+# Generates 64 tokens with one literal disclaimer locked at the start.
+
+base:
+  model: "cassandra-t1.5"
+  precision: "bf16"
+
+generation:
+  total_length: 64
+  unmask_steps: 64
+  temperature: 0.0
+  top_p: 1.0
+  beta: 1.0
+
+locks:
+  - range: [0, auto]
+    source: 'literal("Note - this is a verified answer.")'
+
+execution:
+  preferred_backend: "cassandra-t1.5"
+  guarantee_level: deterministic

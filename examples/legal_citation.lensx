@@ -1,0 +1,61 @@
+# Legal citation drafting with deterministic case-citation preservation.
+#
+# Locks:
+#   - Top-retrieved case citation locus at the start of the response
+#   - Statute reference locked at a known position
+#   - Required disclaimer locked near the end
+#
+# This is the regime where deterministic preservation is critical — a
+# hallucinated case citation is malpractice.
+
+version: "0.1"
+
+base:
+  model: "cassandra-t1.5"
+  precision: "bf16"
+
+adapter:
+  source: "registry/legal-contract-v2.lora"
+  rank: 16
+  apply_to:
+    - v_proj
+    - o_proj
+
+retrieval:
+  bundles:
+    - "corpora/case_law.ltmi"
+    - "corpora/statutes.ltmi"
+  query: "${legal_question}"
+  top_k: 3
+
+locks:
+  - range: [0, auto]
+    source: retrieval[0]
+
+  - range: [40, auto]
+    source: locus("law:contract:UCC:section_2-201_writing_threshold")
+
+  - range: [120, auto]
+    type: literal
+    content: "This response is for informational purposes only and does not constitute legal advice."
+
+generation:
+  total_length: 192
+  unmask_steps: 12
+  temperature: 0.7
+  rep_penalty: 1.3
+
+validation:
+  must_contain:
+    - keywords: ["informational purposes"]
+  on_failure: regenerate_once_then_error
+  max_attempts: 3
+
+execution:
+  mode: auto
+  preferred_backend: "cassandra-t1.5"
+  guarantee_level: deterministic
+
+output:
+  format: text
+  include_provenance: true

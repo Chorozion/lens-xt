@@ -1,0 +1,49 @@
+# NL-to-SQL with deterministic schema-identifier preservation.
+#
+# The retrieval bundle contains the database schema as crystallized loci
+# (one locus per table/column with byte-offset provenance). The lock
+# injects retrieved table/column names at the position they appear in
+# the generated SQL — guaranteeing the model cannot hallucinate identifiers.
+
+version: "0.1"
+
+base:
+  model: "cassandra-t1.5"
+
+adapter:
+  source: "registry/sql-northwind-v1.lora"
+
+retrieval:
+  bundles:
+    - "schemas/northwind.ltmi"
+  query: "${user_query}"
+  top_k: 5
+
+locks:
+  # Lock the most relevant table identifier at the beginning of FROM
+  - range: [16, auto]
+    source: retrieval[0]
+
+generation:
+  total_length: 128
+  unmask_steps: 12
+  temperature: 0.4   # lower temperature for SQL determinism
+  top_p: 0.85
+
+validation:
+  must_be_valid_sql:
+    schema_path: "schemas/northwind.sql"
+  on_failure: regenerate_until_valid
+  max_attempts: 5
+
+execution:
+  mode: auto
+  preferred_backend: "cassandra-t1.5"
+  fallback_chain:
+    - "cassandra-t1.5"
+    - "openai-gpt-4o"
+  guarantee_level: deterministic
+
+output:
+  format: text
+  include_provenance: true

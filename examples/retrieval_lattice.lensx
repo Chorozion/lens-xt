@@ -1,0 +1,33 @@
+version: "0.1"
+
+# Demonstrates LTMi-XT lattice-walk retrieval (v0.2 scorer).
+#
+# The lattice scorer:
+#   1. Picks top-N keyword hits as seeds.
+#   2. Expands to lattice neighbors within Chebyshev radius.
+#   3. Re-ranks the expanded pool by keyword + lattice density + decay.
+#
+# This surfaces topical neighbors that don't share enough surface keywords
+# with the query but are spatially adjacent in the lattice (i.e., share a
+# breadcrumb prefix with a high-scoring seed).
+
+base:
+  model: "stub"
+  precision: "fp16"
+
+retrieval:
+  bundles: ["D:/cassandra-eval/C1.json"]
+  query: "${user_query}"
+  top_k: 3
+  scoring:
+    mode: lattice
+  fallback_on_empty: continue
+
+generation:
+  total_length: 96
+  unmask_steps: 64
+
+locks: []
+
+execution:
+  preferred_backend: "stub"

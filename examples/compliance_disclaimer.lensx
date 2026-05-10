@@ -1,0 +1,44 @@
+# Compliance-grade response with locked regulatory boilerplate.
+#
+# Used in regulated-industry deployments (financial advice, medical advice,
+# legal consultation) where specific disclaimer language must appear verbatim.
+# Auditors can verify that disclaimers match the locked content exactly.
+
+version: "0.1"
+
+base:
+  model: "cassandra-t1.5"
+
+adapter:
+  source: "registry/compliance-financial-v1.lora"
+
+locks:
+  # Required SEC/FINRA-style disclaimer at the start
+  - range: head(40)
+    type: literal
+    content: "The following is for informational purposes only and is not investment advice. Past performance does not guarantee future results."
+
+  # Required source attribution at the end
+  - range: tail(20)
+    type: literal
+    content: "Source: SOPHIA Custom · LENS-XT v0.1 · audit_trail_id: ${trace_id}"
+
+generation:
+  total_length: 256
+  unmask_steps: 12
+  temperature: 0.6
+
+validation:
+  must_contain:
+    - keywords: ["informational purposes only"]
+    - keywords: ["audit_trail_id"]
+  on_failure: error
+  max_attempts: 1
+
+execution:
+  mode: deterministic
+  guarantee_level: deterministic
+
+output:
+  format: text
+  include_provenance: true

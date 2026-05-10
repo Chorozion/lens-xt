@@ -1,0 +1,67 @@
+# Reasoning-extension example: structured legal analysis with verification.
+#
+# Stages enforce IRAC (Issue, Rule, Application, Conclusion) structure
+# with retrieval at the Rule stage and per-stage validation.
+
+version: "0.1"
+
+base:
+  model: "cassandra-t1.5"
+
+adapter:
+  source: "registry/legal-contract-v2.lora"
+
+retrieval:
+  bundles:
+    - "corpora/case_law.ltmi"
+    - "corpora/statutes.ltmi"
+  query: "${legal_question}"
+  top_k: 4
+
+reasoning:
+  enabled: true
+  scaffold:
+    - stage: identify_issue
+      prefix: "Issue:"
+      length: 32
+      generate: model
+      validate:
+        must_contain: ["whether"]
+
+    - stage: state_rule
+      prefix: "Rule (from authority):"
+      length: 80
+      generate: retrieve
+
+    - stage: apply_rule
+      prefix: "Application:"
+      length: 80
+      generate: model
+
+    - stage: conclude
+      prefix: "Conclusion:"
+      length: 48
+      generate: model
+
+    - stage: disclaim
+      prefix: "Disclaimer:"
+      length: 32
+      generate: literal
+      literal_content: "This response is for informational purposes only and does not constitute legal advice. Consult qualified counsel for case-specific guidance."
+
+  on_stage_failure: retry_stage
+  max_retries: 3
+
+generation:
+  total_length: 320
+  unmask_steps: 16
+  temperature: 0.6
+
+execution:
+  mode: auto
+  preferred_backend: "cassandra-t1.5"
+  guarantee_level: deterministic
+
+output:
+  format: markdown
+  include_provenance: true

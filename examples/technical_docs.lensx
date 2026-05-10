@@ -1,0 +1,46 @@
+# Technical documentation generation with deterministic API-name preservation.
+#
+# Locks function signatures and type annotations from the docs corpus, lets
+# the model fill in prose around them. Counter-pattern to Copilot-style
+# generation where API names can be hallucinated.
+
+version: "0.1"
+
+base:
+  model: "cassandra-t1.5"
+
+adapter:
+  source: "registry/technical-api-v1.lora"
+
+retrieval:
+  bundles:
+    - "corpora/api_reference.ltmi"
+  query: "${user_query}"
+  top_k: 3
+
+locks:
+  # Top retrieved API signature locked at start
+  - range: [0, auto]
+    source: retrieval[0]
+
+  # Required reference link near end
+  - range: [140, auto]
+    type: literal
+    content: "Reference: see API documentation for full type signatures."
+
+generation:
+  total_length: 192
+  unmask_steps: 12
+  temperature: 0.7
+
+validation:
+  must_contain:
+    - keywords: ["API"]
+
+execution:
+  mode: auto
+  preferred_backend: "cassandra-t1.5"
+
+output:
+  format: markdown
+  include_provenance: true

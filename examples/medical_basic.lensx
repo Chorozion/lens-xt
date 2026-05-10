@@ -1,0 +1,73 @@
+# Example: Basic medical-domain spec with retrieval-grounded forced anchors.
+#
+# Usage:
+#   lensx parse examples/medical_basic.lensx
+#   lensx validate examples/medical_basic.lensx
+#   lensx explain examples/medical_basic.lensx
+#   lensx run examples/medical_basic.lensx --var user_input="What's a normal heart rate?"
+
+version: "0.1"
+
+base:
+  model: "cassandra-t1.5"
+  precision: "bf16"
+
+adapter:
+  source: "registry/medical-cardiology-v3.lora"
+  rank: 16
+  apply_to:
+    - v_proj
+    - o_proj
+
+retrieval:
+  bundles:
+    - "corpora/cardiology.ltmi"
+    - "corpora/pharmacology.ltmi"
+  query: "${user_input}"
+  top_k: 3
+  scoring:
+    breadcrumb_match: 0.5
+    decay_weight: 0.2
+    semantic_similarity: 0.3
+  fallback_on_empty: error
+
+locks:
+  # Lock the top-retrieved locus at the start of the answer slot.
+  - range: [0, auto]
+    source: retrieval[0]
+
+  # Lock a fixed safety phrase near the end.
+  - range: [80, auto]
+    type: literal
+    content: "Always consult a healthcare provider before adjusting medication."
+
+generation:
+  total_length: 192
+  unmask_steps: 12
+  temperature: 0.8
+  top_p: 0.9
+  beta: 0.5
+  rep_penalty: 1.3
+
+validation:
+  must_contain:
+    - keywords: ["healthcare provider"]
+  must_not_contain:
+    - keywords: ["I am not a doctor"]
+  on_failure: regenerate_once_then_error
+  max_attempts: 3
+
+execution:
+  mode: auto
+  preferred_backend: "cassandra-t1.5"
+  fallback_chain:
+    - "cassandra-t1.5"
+    - "openai-gpt-4o"
+  guarantee_level: best_effort
+
+output:
+  format: text
+  include_provenance: true
+  include_metrics:
+    - corpus_overlap
+    - anchor_preservation_rate
