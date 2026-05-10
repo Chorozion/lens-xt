@@ -1,0 +1,73 @@
+name: Publish to PyPI
+
+# Triggers when you push a tag like v0.1.0b1 or v1.0.0 to main.
+# Uses PyPI Trusted Publishing (OIDC) — no token, no secret.
+#
+# One-time setup (only needed once, ever):
+#   1. Go to https://pypi.org/manage/project/lens-xt/settings/publishing/
+#   2. Add a "Trusted publisher" with:
+#        Owner:        Chorozion
+#        Repository:   lens-xt
+#        Workflow:     publish.yml
+#        Environment:  pypi
+#   3. (Recommended) revoke any account-wide tokens
+#
+# Releasing thereafter:
+#   git tag v0.1.0b2
+#   git push origin v0.1.0b2
+#   ↑ this workflow runs automatically and publishes to PyPI
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+      - "v*.*.*[ab][0-9]*"   # alpha/beta tags like v0.1.0b1
+  workflow_dispatch:           # manual trigger from Actions tab
+
+jobs:
+  build-and-publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/lens-xt/
+    permissions:
+      # Required for PyPI Trusted Publishing (OIDC)
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Verify version matches tag
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          PKG_VERSION=$(python -c "import re,pathlib; t=pathlib.Path('pyproject.toml').read_text(); print(re.search(r'^version = \"([^\"]+)\"', t, re.M).group(1))")
+          echo "Tag version:     $TAG_VERSION"
+          echo "Package version: $PKG_VERSION"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag $TAG_VERSION does not match pyproject.toml version $PKG_VERSION"
+            exit 1
+          fi
+
+      - name: Build distribution
+        run: python -m build
+
+      - name: Verify distribution
+        run: python -m twine check dist/*
+
+      - name: Publish to PyPI (Trusted Publishing — no token)
+        uses: pypa/gh-action-pypi-publish@release/v1
