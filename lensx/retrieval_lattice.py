@@ -40,9 +40,10 @@ def lattice_for_breadcrumb(
 ) -> tuple[int, int, int]:
     """Compute the canonical lattice coordinate for a 4-level breadcrumb.
 
-    Per LTMi-XT v0.1 spec §2.4 — BLAKE2b digest of lowercase '/'-joined
-    breadcrumb prefixes. Topology property: loci sharing a k-prefix share
-    the first k lattice coordinates.
+    Per LTMi-XT v0.3.1 spec §2.4 — BLAKE2b digest of lowercase '/'-joined
+    breadcrumb prefixes (restored as default after PCA-3D ablation showed
+    no downstream advantage — see spec §0 walk-back, 2026-05-12). Topology
+    property: loci sharing a k-prefix share the first k lattice coordinates.
 
     Args:
         breadcrumb: 4-level path [topic, subtopic, concept, slot]

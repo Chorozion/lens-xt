@@ -295,6 +295,11 @@ class LocalMDLMBackend(Backend):
         # (already in the same format: dict[int, int])
         locked = request.locked_positions if request.locked_positions else None
 
+        # LTMi priors (only consumed by triple-attention models with
+        # config.attention_use_ltmi_priors=True; single-attn ignores).
+        locked_scores = request.locked_position_scores or None
+        locked_lattice = request.locked_position_lattice or None
+
         t_start = time.time()
         with torch.no_grad():
             out_tokens, _ = generate_with_anchors(
@@ -307,6 +312,8 @@ class LocalMDLMBackend(Backend):
                 top_p=request.top_p,
                 beta=request.beta,
                 rep_penalty=request.rep_penalty,
+                locked_position_scores=locked_scores,
+                locked_position_lattice=locked_lattice,
             )
         elapsed_ms = int((time.time() - t_start) * 1000)
 
