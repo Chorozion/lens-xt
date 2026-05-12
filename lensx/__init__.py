@@ -36,6 +36,7 @@ from .ast import (
 from .parser import parse, parse_file, ParseError
 from .validator import validate, ValidationError
 from .sdk import LensX, LensXResult, constrain, locks
+from . import ltmi  # subpackage with LTMi-XT v0.3.1 + V1-V6 LoRA mechanisms
 
 __version__ = "0.1.0b1"
 __all__ = [
