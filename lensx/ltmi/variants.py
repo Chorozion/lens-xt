@@ -49,26 +49,50 @@ class VariantConfig:
 
 
 def variant_v1() -> VariantConfig:
+    """V1 — LoRA-only baseline. No lattice intervention. Reference arm that
+    measures the effect of LoRA fine-tuning alone, so V2-V6 deltas attribute
+    to their specific intervention rather than to LoRA itself."""
     return VariantConfig(variant_name="V1")
 
 
 def variant_v2() -> VariantConfig:
+    """V2 — V1 + learned MLP projection on lattice coords. Replaces the
+    naive (lx + ly + lz) embedding sum with an MLP that maps the
+    concatenated lattice embedding to a head-dim K contribution, giving
+    the lattice path representational capacity beyond simple addition."""
     return VariantConfig(variant_name="V2", learned_lattice_projection=True)
 
 
 def variant_v3() -> VariantConfig:
+    """V3 — V1 + multi-resolution lattice (coarse 4³ + medium 16³ + fine 64³).
+    Per-axis triple-resolution embedding tables provide gradient signal at
+    multiple granularities; the small coarse table (64 unique cells) is
+    easier for the model to learn from than the 262k-cell fine lattice."""
     return VariantConfig(variant_name="V3", multi_resolution_lattice=True)
 
 
 def variant_v4() -> VariantConfig:
+    """V4 — V1 + softmax temperature annealing on the path-mix gate (τ=5 → 1).
+    Forces the gate to start near-uniform (τ=5 → smooth distribution) and
+    sharpen over training (τ=1 → committed choice). Targets the failure mode
+    where the gate fence-sits at low-magnitude weights for the lattice path."""
     return VariantConfig(variant_name="V4", gate_temp_anneal=True)
 
 
 def variant_v5() -> VariantConfig:
+    """V5 — V1 + aux contrastive loss. Adds an auxiliary loss term that
+    MAXIMIZES divergence between lattice-conditioned and un-conditioned
+    logits at locked positions, demanding the lattice channel produce a
+    measurably different output. Direct coercion of the channel to do work."""
     return VariantConfig(variant_name="V5", aux_contrastive=True)
 
 
 def variant_v6() -> VariantConfig:
+    """V6 — V1 + V2 + V3 + V4 + V5 stacked. Tests the maximum-intervention
+    hypothesis: if four orthogonal mechanisms together cannot rescue the
+    lattice channel, the v0.1 reference design needs architectural redesign
+    (e.g., attention-bias formulation per Mercury 2's recommendation), not
+    incremental fixes."""
     return VariantConfig(
         variant_name="V6",
         learned_lattice_projection=True,

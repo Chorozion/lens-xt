@@ -198,23 +198,33 @@ def retrieve_top_k_lattice(
     seed_coords = [coord for _, _, coord in seeds]
 
     # Per-locus density: how many seed neighbors lie within walk_radius?
+    # We compute it inline during candidate filtering (one Chebyshev pass
+    # per locus) and cache results in `density_cache` keyed by coord so the
+    # Stage 3 rescorer reads from the cache instead of recomputing.
+    density_cache: dict[tuple[int, int, int], int] = {}
+
     def density_for(coord: tuple[int, int, int]) -> int:
-        return sum(
+        cached = density_cache.get(coord)
+        if cached is not None:
+            return cached
+        d = sum(
             1
             for sc in seed_coords
             if chebyshev_distance(coord, sc) <= cfg.walk_radius
         )
+        density_cache[coord] = d
+        return d
 
     # Build expanded candidate pool: every locus within radius of any seed,
     # plus the seeds themselves. Use locus id (or breadcrumb tuple) for dedup.
     seen_ids: set[Any] = set()
     candidates: list[tuple[dict[str, Any], tuple[int, int, int]]] = []
     for locus, coord in flat:
-        # Keep loci that are near at least one seed.
-        if any(
-            chebyshev_distance(coord, sc) <= cfg.walk_radius
-            for sc in seed_coords
-        ):
+        # Compute density once per locus. Density > 0 ⇔ at least one seed
+        # within walk_radius, so we use the cached value as both the
+        # filter and the Stage-3 input — saves the second Chebyshev pass.
+        d = density_for(coord)
+        if d > 0:
             key = locus.get("id") or tuple(locus.get("breadcrumb") or [])
             if key in seen_ids:
                 continue

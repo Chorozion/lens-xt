@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/runtime-Apache_2.0-00D4FF?style=flat-square&labelColor=050A15)](LICENSE)
 [![Spec](https://img.shields.io/badge/spec-CC_BY_4.0-FFD93D?style=flat-square&labelColor=050A15)](https://creativecommons.org/licenses/by/4.0/)
 [![Python](https://img.shields.io/badge/python-3.10+-00D4FF?style=flat-square&labelColor=050A15&logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-176_passing-9BFFE8?style=flat-square&labelColor=050A15)](#status)
+[![Tests](https://img.shields.io/badge/tests-249_passing-9BFFE8?style=flat-square&labelColor=050A15)](#status)
 [![Backend](https://img.shields.io/badge/backend-Cassandra_T1.5-FFD93D?style=flat-square&labelColor=050A15)](https://github.com/Chorozion/Casandra-t1-diffusion-edge-model)
 
 **Declarative spec language for token-level deterministic generation in masked-diffusion LMs**
@@ -56,7 +56,7 @@ LENS-XT separates *what to constrain* (the spec, CC BY 4.0) from *how to enforce
 
 ## Status
 
-> v0.1.0a1 — alpha. Runtime works end-to-end against the real Cassandra T1.5 model (`anchor_preservation_rate: 1.000`, DETERMINISTIC guarantee preserved). API surfaces may shift before v0.1.0.
+> v0.1.0b1 — beta. Runtime works end-to-end against the real Cassandra T1.5 model (`anchor_preservation_rate: 1.000`, DETERMINISTIC guarantee preserved). API surfaces may shift before v0.1.0 stable.
 
 | Component | Status |
 |---|---|
@@ -76,7 +76,7 @@ LENS-XT separates *what to constrain* (the spec, CC BY 4.0) from *how to enforce
 | Anthropic API backend | 📋 planned |
 | Mercury 2 native backend | 📋 pending Inception API support |
 
-**Tests:** 168 unit + 8 backend tests passing, including a live integration against Cassandra T1.5 with `anchor_preservation_rate=1.0`.
+**Tests:** 249 passing (241 unit + 8 integration), including a live integration against Cassandra T1.5 with `anchor_preservation_rate=1.0`. The `lensx.ltmi` subpackage shipped 2026-05-12 adds 10 tests for the V1-V6 LoRA mechanisms and alternative lattice coord schemes.
 
 ## Install
 
