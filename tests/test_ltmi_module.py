@@ -15,10 +15,10 @@ def test_subpackage_importable():
 
 
 def test_variant_factory_set():
-    """All 6 variant factories produce the expected configurations."""
+    """All 7 variant factories produce the expected configurations."""
     from lensx.ltmi import VARIANTS
 
-    assert set(VARIANTS.keys()) == {"V1", "V2", "V3", "V4", "V5", "V6"}
+    assert set(VARIANTS.keys()) == {"V1", "V2", "V3", "V4", "V5", "V6", "V7"}
 
     v1 = VARIANTS["V1"]()
     assert v1.variant_name == "V1"
@@ -26,6 +26,7 @@ def test_variant_factory_set():
     assert not v1.multi_resolution_lattice
     assert not v1.gate_temp_anneal
     assert not v1.aux_contrastive
+    assert not v1.train_lattice_embeddings
 
     v6 = VARIANTS["V6"]()
     assert v6.variant_name == "V6"
@@ -33,6 +34,15 @@ def test_variant_factory_set():
     assert v6.multi_resolution_lattice
     assert v6.gate_temp_anneal
     assert v6.aux_contrastive
+
+    # V7 — different angle: unfreeze lattice embeddings, no other interventions
+    v7 = VARIANTS["V7"]()
+    assert v7.variant_name == "V7"
+    assert v7.train_lattice_embeddings
+    assert not v7.learned_lattice_projection
+    assert not v7.multi_resolution_lattice
+    assert not v7.gate_temp_anneal
+    assert not v7.aux_contrastive
 
     # Mid variants enable exactly one mechanism
     v2 = VARIANTS["V2"]()

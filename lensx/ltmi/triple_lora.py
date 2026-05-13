@@ -134,6 +134,18 @@ class TripleAttentionLoRA(nn.Module):
         for p in self.base.parameters():
             p.requires_grad = False
 
+        # V7: selectively un-freeze the lattice embedding tables so they
+        # update via backprop during LoRA training. Different angle from
+        # V2-V5: instead of WRAPPING the lattice path with new modules,
+        # we let the EXISTING embeddings learn. Initial values are the
+        # base model's (BLAKE2b-initialized) coords; the model is free
+        # to move them anywhere over training.
+        if variant.train_lattice_embeddings and hasattr(base_attn, "lattice_x_emb"):
+            for emb_name in ("lattice_x_emb", "lattice_y_emb", "lattice_z_emb"):
+                emb = getattr(base_attn, emb_name, None)
+                if emb is not None and hasattr(emb, "weight"):
+                    emb.weight.requires_grad = True
+
         self.num_heads = base_attn.num_heads
         self.num_kv_heads = base_attn.num_kv_heads
         self.head_dim = base_attn.head_dim

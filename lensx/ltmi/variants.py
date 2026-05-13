@@ -46,6 +46,11 @@ class VariantConfig:
     # LTMi gate trainable override
     train_ltmi_gate: bool = True
     ltmi_gate_init: float = 0.5
+    # V7: unfreeze the base model's lattice_x_emb / lattice_y_emb / lattice_z_emb
+    # so the embeddings update via backprop (rather than being fixed BLAKE2b
+    # lookups). Tests whether the lattice channel's failure is from the
+    # FIXED-NESS of the coords, not from the channel concept itself.
+    train_lattice_embeddings: bool = False
 
 
 def variant_v1() -> VariantConfig:
@@ -102,6 +107,28 @@ def variant_v6() -> VariantConfig:
     )
 
 
+def variant_v7() -> VariantConfig:
+    """V7 — V1 + unfrozen lattice embedding tables. Different angle from V2-V6:
+    rather than wrapping the lattice path with new modules, this variant
+    UN-FREEZES the existing lattice_x_emb / lattice_y_emb / lattice_z_emb so
+    they update via backprop during LoRA training.
+
+    Hypothesis: the lattice channel's failure may be from the FIXED-NESS of
+    the coord embeddings (initialized at zero, stayed at zero — no gradient
+    path). If we let the model LEARN its own coord embeddings starting from
+    the BLAKE2b initialization, the channel might find a signal.
+
+    If V7 passes where V1-V6 fail: the issue was that fixed embeddings
+    can't move; the channel itself is fine.
+    If V7 fails: the additive-K mechanism is architecturally too weak
+    regardless of how the embeddings are parameterized — confirms D1
+    (attention-bias formulation) is the next direction."""
+    return VariantConfig(
+        variant_name="V7",
+        train_lattice_embeddings=True,
+    )
+
+
 VARIANTS: dict[str, Callable[[], VariantConfig]] = {
     "V1": variant_v1,
     "V2": variant_v2,
@@ -109,4 +136,5 @@ VARIANTS: dict[str, Callable[[], VariantConfig]] = {
     "V4": variant_v4,
     "V5": variant_v5,
     "V6": variant_v6,
+    "V7": variant_v7,
 }
