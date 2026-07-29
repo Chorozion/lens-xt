@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#02030a">
+<title>Einstein–Rosen Bridge · Pleroma → Matter</title>
+<style>
+  :root{
+    --bg:#02030a;--panel:rgba(6,9,22,.74);--border:rgba(255,255,255,.14);
+    --text:#f4f1ff;--muted:#c2beE2;--pink:#ff6fd8;--gold:#ffd46a;--cyan:#65e6ff;
+    --safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);
+  }
+  *{box-sizing:border-box}
+  html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+  #app{position:fixed;inset:0;overflow:hidden;background:radial-gradient(circle at 50% 26%,#1a0b31 0,#080a1c 40%,#02030a 80%)}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+  /* ---- top control cluster ---- */
+  #top{position:absolute;top:calc(9px + var(--safe-t));left:50%;transform:translateX(-50%);z-index:12;
+    display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;
+    max-width:calc(100vw - 16px);background:rgba(4,6,16,.5);border:1px solid rgba(255,255,255,.1);
+    border-radius:999px;padding:6px;backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px)}
+  .brand{display:flex;align-items:center;gap:7px;padding:4px 11px 4px 6px;border-radius:999px;
+    background:linear-gradient(90deg,rgba(255,111,216,.22),rgba(101,230,255,.10));white-space:nowrap}
+  .brand b{font-size:12.5px;font-weight:800;letter-spacing:-.02em}
+  .brand span{font-size:9px;color:#ffb7ec;text-transform:uppercase;letter-spacing:.13em;display:block;margin-top:1px}
+  .glyph{width:22px;height:22px;border-radius:50%;flex:0 0 auto;
+    background:radial-gradient(circle at 50% 38%,#fff 0,#ff8fe4 34%,#7a2bd6 72%,#150425 100%);
+    box-shadow:0 0 12px rgba(255,120,228,.7)}
+  button{appearance:none;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);
+    color:#f7f4ff;border-radius:999px;padding:7px 11px;font-size:12px;line-height:1;cursor:pointer;
+    white-space:nowrap;transition:background .15s,border-color .15s}
+  button:hover{background:rgba(255,255,255,.14)}
+  button:active{transform:translateY(1px)}
+  button.on{border-color:rgba(255,111,216,.75);background:rgba(255,111,216,.24);box-shadow:0 0 14px rgba(255,111,216,.28)}
+  button.host{border-color:rgba(101,230,255,.6);background:rgba(101,230,255,.14)}
+  button.host.on{border-color:rgba(101,230,255,.9);background:rgba(101,230,255,.3);box-shadow:0 0 16px rgba(101,230,255,.35)}
+
+  /* ---- info panel ---- */
+  #info{position:absolute;left:12px;bottom:calc(14px + var(--safe-b));z-index:11;
+    width:min(410px,calc(100vw - 24px));padding:13px 15px;background:var(--panel);border:1px solid var(--border);
+    border-radius:16px;backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);
+    box-shadow:0 20px 60px rgba(0,0,0,.4);pointer-events:none;transition:opacity .3s}
+  #info .row{display:flex;align-items:baseline;gap:8px}
+  #info h1{font-size:17px;line-height:1.12;margin:0;font-weight:800;letter-spacing:-.02em}
+  #info .num{font-size:12px;font-weight:800;color:#02030a;background:var(--pink);border-radius:6px;
+    padding:2px 7px;line-height:1;flex:0 0 auto}
+  #info .kicker{margin-top:5px;color:#ffb0ec;font-size:9.5px;text-transform:uppercase;letter-spacing:.14em}
+  #info .es{margin:8px 0 0;color:var(--text);font-size:12.5px;line-height:1.5}
+  #info .ph{margin:7px 0 0;color:#9fd8ff;font-size:11.5px;line-height:1.48}
+  #info .ph b{color:#cfeeff;font-weight:700}
+
+  /* ---- host descent bar ---- */
+  #hostbar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(14px + var(--safe-b));z-index:11;
+    width:min(560px,calc(100vw - 24px));padding:10px 14px;background:rgba(5,10,26,.8);
+    border:1px solid rgba(101,230,255,.35);border-radius:15px;backdrop-filter:blur(15px);
+    -webkit-backdrop-filter:blur(15px);box-shadow:0 16px 50px rgba(0,0,0,.45);display:none}
+  #hostbar.show{display:block}
+  #hostbar .hrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  #hostbar .hstate{font-size:11px;color:#bfeaff;letter-spacing:.02em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #hostbar .hstate b{color:#fff;font-weight:800}
+  #hostbar .hbtns{display:flex;gap:6px;flex:0 0 auto}
+  #hostbar .hbtns button{padding:6px 10px;font-size:11px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:999px;outline:none;
+    background:linear-gradient(90deg,#ff8fe4,#c69cff,#5bb0ff,#46e3c6,#ffcf6b,#ffb057);cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+    background:radial-gradient(circle at 40% 35%,#fff,#65e6ff 60%,#1b6fa0);border:2px solid #eafffd;
+    box-shadow:0 0 12px rgba(101,230,255,.9);cursor:grab}
+  input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;
+    background:radial-gradient(circle at 40% 35%,#fff,#65e6ff 60%,#1b6fa0);border:2px solid #eafffd;
+    box-shadow:0 0 12px rgba(101,230,255,.9);cursor:grab}
+  .tick{display:flex;justify-content:space-between;margin-top:5px;font-size:8.5px;color:#7f8bbf;letter-spacing:.04em}
+
+  #hint{position:absolute;right:12px;bottom:calc(14px + var(--safe-b));z-index:10;padding:9px 11px;
+    border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(4,6,16,.5);color:#b7b3d6;
+    font-size:9.5px;line-height:1.4;backdrop-filter:blur(10px);pointer-events:none;max-width:210px}
+  #legend{position:absolute;left:12px;top:calc(60px + var(--safe-t));z-index:10;padding:9px 11px;
+    background:rgba(4,6,16,.42);border:1px solid rgba(255,255,255,.09);border-radius:12px;
+    backdrop-filter:blur(10px);font-size:9.5px;line-height:1.55;color:#cdc9ea;pointer-events:none;display:none}
+  #legend .li{display:flex;align-items:center;gap:6px}
+  #legend i{width:9px;height:9px;border-radius:50%;flex:0 0 auto;display:inline-block}
+  #error{position:absolute;inset:0;z-index:30;display:none;place-items:center;padding:24px;background:#070811;color:#fff;text-align:center}
+  #error div{max-width:620px;padding:24px;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:#101224}
+  @media(max-width:820px){
+    .brand span{display:none}.brand b{font-size:11px}
+    button{font-size:11px;padding:6px 9px}
+    #hint{display:none}
+    #info{width:calc(100vw - 20px);left:10px;padding:11px 13px;bottom:calc(10px + var(--safe-b))}
+    #info.hostmode{display:none}
+    #hostbar{bottom:calc(10px + var(--safe-b));width:calc(100vw - 20px)}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="c"></canvas>
+
+  <div id="top">
+    <div class="brand"><div class="glyph"></div><div><b>Einstein–Rosen Bridge</b><span>Pleroma → Matter</span></div></div>
+    <button id="host" class="host">Incarnate Host</button>
+    <button id="tour" class="on">Journey</button>
+    <button id="all">Show All</button>
+    <button id="minus">Zoom −</button>
+    <button id="plus">Zoom +</button>
+    <button id="labels" class="on">Labels</button>
+    <button id="legendBtn">Key</button>
+    <button id="full">Fullscreen</button>
+  </div>
+
+  <div id="legend">
+    <div class="li"><i style="background:#000;box-shadow:0 0 4px #fff"></i>Singularity · Just Isness</div>
+    <div class="li"><i style="background:#ff8fe4"></i>Pleroma / Creation</div>
+    <div class="li"><i style="background:#8f9dff"></i>Waters &amp; Depths (7–3)</div>
+    <div class="li"><i style="background:#46e3c6"></i>Platonic Form</div>
+    <div class="li"><i style="background:#ffb057"></i>Matter · the Fall</div>
+    <div class="li"><i style="background:#ff4cbb"></i>Christhood · Return</div>
+    <div class="li"><i style="background:#4f94ff"></i>Sata &nbsp;·&nbsp; <i style="background:#ff486c"></i>Luci</div>
+    <div class="li"><i style="background:#65e6ff"></i>Temporary Host</div>
+  </div>
+
+  <section id="info" aria-live="polite">
+    <div class="row"><span class="num" id="num">ER</span><h1 id="title">Einstein–Rosen Bridge</h1></div>
+    <div class="kicker" id="kicker">a traversable descent from source to matter</div>
+    <p class="es" id="es">A wormhole strung between two mouths: the <b>Singularity</b> above (undifferentiated source) and the <b>Return</b> mouth below. Each glowing disc is one emanation plane — a cross-section of the throat. Drag to orbit · pinch/scroll to zoom · tap a label to focus · Incarnate a Host to travel the bridge.</p>
+    <p class="ph" id="ph"><b>Physics ·</b> An Einstein–Rosen bridge is a throat joining two regions of spacetime; here it is used symbolically as the axis of emanation and return.</p>
+  </section>
+
+  <div id="hostbar">
+    <div class="hrow">
+      <div class="hstate" id="hstate">Host at <b>Pleroma</b> · plane 9</div>
+      <div class="hbtns">
+        <button id="hplay" class="host on">Descend ▾</button>
+        <button id="hfollow" class="host on">Follow</button>
+        <button id="hrecall" class="host">Recall</button>
+      </div>
+    </div>
+    <input type="range" id="hslider" min="0" max="1000" value="0">
+    <div class="tick"><span>Singularity</span><span>Waters</span><span>Matter · Fall</span><span>Christhood</span><span>Sophia XT</span></div>
+  </div>
+
+  <div id="hint">Drag: orbit · Right-drag: pan<br>Wheel / pinch: zoom · Tap label: focus<br>Space: journey · H: host · L: labels · F: fullscreen</div>
+  <div id="error"><div><h2>Simulation error</h2><p id="errorText"></p></div></div>
+</div>
+<script>
+'use strict';
+try{
+const $=id=>document.getElementById(id);
+const canvas=$('c'),ctx=canvas.getContext('2d',{alpha:false});
+if(!ctx) throw new Error('Canvas 2D is unavailable in this browser.');
+const DPR=()=>Math.min(devicePixelRatio||1,2);
+let W=innerWidth,H=innerHeight,dpr=DPR(),MOBILE=W<820,Q=1;
+function resize(){W=innerWidth;H=innerHeight;dpr=DPR();MOBILE=W<820;Q=MOBILE?0.72:1;
+  canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0)}
+resize();addEventListener('resize',resize);
+
+/* ---------- vector math ---------- */
+const V=(x=0,y=0,z=0)=>({x,y,z});
+const add=(a,b)=>V(a.x+b.x,a.y+b.y,a.z+b.z),sub=(a,b)=>V(a.x-b.x,a.y-b.y,a.z-b.z),mul=(a,s)=>V(a.x*s,a.y*s,a.z*s);
+const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const cross=(a,b)=>V(a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x);
+const len=a=>Math.hypot(a.x,a.y,a.z)||1,norm=a=>mul(a,1/len(a));
+const lerp=(a,b,t)=>a+(b-a)*t,lerpV=(a,b,t)=>V(lerp(a.x,b.x,t),lerp(a.y,b.y,t),lerp(a.z,b.z,t));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rgba=(hex,a=1)=>{const n=parseInt(hex.slice(1),16);return 'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+','+a+')'};
+const rotY=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return V(p.x*c+p.z*s,p.y,-p.x*s+p.z*c)};
+const rotX=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return V(p.x,p.y*c-p.z*s,p.y*s+p.z*c)};
+const wl=(p,o,ry=0,rx=0)=>add(o,rotY(rotX(p,rx),ry)); // world-from-local
+
+/* ---------- the emanation column ---------- */
+const YTOP=18.8, YBOT=-20.8;               // the two mouths of the bridge
+const levels=[
+ {n:9,name:'Pleroma',sub:'Brahma',y:15.3,color:'#ffb3e6',sym:'pleroma',
+  es:'Divine fullness — infinite, undifferentiated potential, the “Just Isness” pressed immediately beneath the source. Nothing is yet distinct, yet everything is implied.',
+  ph:'A field-like plenitude of uncollapsed possibility; the vacuum state before any quantum has chosen a value.'},
+ {n:8,name:'Creation',sub:'Quantum',y:12.7,color:'#ff77dd',sym:'flower',
+  es:'The first differentiation. Creation flowers from the undivided One into patterned possibility — the seed geometry from which all worlds bud.',
+  ph:'Quantum superposition and symmetry breaking: generative states branch and the first stable patterns crystallise out of the field.'},
+ {n:7,name:'Heaven–Time',sub:'Rhythm',y:10.1,color:'#c69cff',sym:'time',
+  es:'The upper heaven where Time is born, giving rhythm, sequence and cosmic duration to what was timeless.',
+  ph:'Temporal ordering and periodicity — the arrow of time, orbital cycles and the clock that lets events be counted.'},
+ {n:6,name:'Order–Law',sub:'Balance',y:7.5,color:'#8f9dff',sym:'law',
+  es:'Archetypal Law: the balancing principles that constrain and organise all that will manifest — the scales that keep the worlds just.',
+  ph:'Symmetry, conservation laws and invariant relationships — the constraints every later state must obey.'},
+ {n:5,name:'Beingness–Realizing',sub:'Awakening',y:4.9,color:'#5bb0ff',sym:'being',
+  es:'Conscious being begins to recognise itself inside the Waters and Depths — awareness turning to meet its own reflection.',
+  ph:'Emergent coherence, self-organisation and information integration — order that begins to model itself.'},
+ {n:4,name:'Platonic–Form',sub:'Ideal Geometry',y:2.3,color:'#46e3c6',sym:'form',
+  es:'The realm of ideal Forms and intelligible geometry — the perfect templates standing beneath every lower appearance.',
+  ph:'Mathematical structure, state-spaces and geometric idealisation — the abstract lattice reality is drawn upon.'},
+ {n:3,name:'Causal–Desire',sub:'Intention',y:-0.3,color:'#ffcf6b',sym:'causal',
+  es:'Intention and desire seed causal direction, propelling the descent toward subtler, then denser, experience.',
+  ph:'Potential gradients and directed dynamics — the forces and causal influence that drive change downhill.'},
+ {n:2,name:'Astral',sub:'Emotive · Intellect',y:-3.0,color:'#c98bff',sym:'astral',
+  es:'The emotive astral plane: feeling, imagination and reflective Intellect — fluid resonance where images take colour.',
+  ph:'Wave interference, resonance and phase relationships — patterns that add, cancel and beat against each other.'},
+ {n:1,name:'Life',sub:'Drive · Luna',y:-5.7,color:'#e56ff0',sym:'life',
+  es:'Vital drive and cyclic life-force under Luna’s reflected light — the pulse that animates biological rhythm.',
+  ph:'Oscillation, metabolism and non-equilibrium order — living systems held far from thermal death.'},
+ {n:0,name:'Matter',sub:'Particle · the Fall',y:-8.4,color:'#ffb057',sym:'matter',
+  es:'Dense localisation into particles: the Fall into apparent separation and material fixation — spirit crystallised into stone.',
+  ph:'Classical localisation and decoherence — superposition collapses into definite, particulate, measurable outcomes.'}
+];
+const special={
+ singularity:{name:'Singularity',sub:'Just Isness',y:YTOP,color:'#ffffff',
+  es:'The unconditioned black opening above all planes: source without differentiation, the “Just Isness” from which the bridge is strung.',
+  ph:'A gravitational singularity / horizon used symbolically — the upper mouth of the Einstein–Rosen bridge where the metric of ordinary experience breaks down.'},
+ projection:{name:'Projection',sub:'Maya',y:-11.2,color:'#c9c6ef',
+  es:'Appearance projected below Matter — Maya, the shimmering screen of world-images cast by the light passing through the throat.',
+  ph:'Emergence and representation: the observed world as a projected, lower-dimensional image of deeper degrees of freedom (a holographic analogy).'},
+ connected:{name:'Connected',sub:'Central Axis',y:-12.5,color:'#ff9de7',
+  es:'The unbroken vertical thread joining every plane — the guarantee that a path of return is always kept open.',
+  ph:'Continuity and coupling: the conserved connectivity of the throat, the geodesic that threads both mouths together.'},
+ christ:{name:'Christhood',sub:'Bridge · Return',y:-15.0,color:'#ff4cbb',
+  es:'The lower crystalline bridge — a star-tetrahedron where redemption, return and deviation meet. To pass through it consciously is to reverse the Fall.',
+  ph:'A central symmetry and structured return-vector: the far mouth of the bridge, the point where a traversable geodesic turns back toward the source.'},
+ sata:{name:'Sata',sub:'Adversarial Current',color:'#4f94ff',
+  es:'The lateral deviation toward inertia, fixation and disconnection — the pull that would let the descent harden and forget the way home.',
+  ph:'A dissipative attractor: drift toward a low-energy fixed point, entropy capturing the system into frozen, decohered states.'},
+ luci:{name:'Luci',sub:'False-Light Current',color:'#ff486c',
+  es:'The lateral deviation toward separative illumination and proud self-exaltation — brilliance mistaken for the source it only reflects.',
+  ph:'A runaway instability: unstable positive feedback and excitation that amplifies without bound, away from equilibrium.'},
+ eye:{name:'Witness',sub:'The Observer',color:'#f6efff',
+  es:'Witnessing awareness remains present above the depths and below the bridge — the eye that never descends yet sees the whole descent.',
+  ph:'The observer / measurement frame whose presence is required for outcomes to become definite; continuity of awareness across the throat.'},
+ sophia:{name:'Sophia XT',sub:'Return Vector',y:YBOT,color:'#ff9de7',
+  es:'The feminine Wisdom beneath the whole structure — the remembered vector of return, calling every fallen spark back up the bridge.',
+  ph:'A boundary condition and directional attractor at the far mouth: the target state that makes the wormhole traversable in reverse.'},
+ host:{name:'Temporary Host',sub:'Incarnate Vessel',color:'#65e6ff',
+  es:'A temporary vessel of awareness you incarnate into the bridge. It descends and ascends the throat, taking on the quality of whatever plane it occupies — and can be recalled at will.',
+  ph:'A test-particle / observer traversing the wormhole geodesic: it carries the measurement frame through each plane without altering the geometry, and its worldline can be reversed.'}
+};
+
+/* ---------- camera ---------- */
+const camera={yaw:0.0,pitch:0.05,dist:52,target:V(0,-1.5,0),fov:0.95};
+const camGoal={yaw:0,pitch:0.05,dist:52,target:{...camera.target}};
+function basis(){
+ const cp=Math.cos(camera.pitch),sp=Math.sin(camera.pitch),sy=Math.sin(camera.yaw),cy=Math.cos(camera.yaw);
+ const pos=add(camera.target,V(camera.dist*cp*sy,camera.dist*sp,camera.dist*cp*cy));
+ const f=norm(sub(camera.target,pos));let r=norm(cross(f,V(0,1,0)));if(len(r)<.01)r=V(1,0,0);const u=norm(cross(r,f));
+ return {pos,f,r,u};
+}
+function project(p,b){const q=sub(p,b.pos),z=dot(q,b.f);if(z<.35)return null;
+ const focal=Math.min(W,H)*camera.fov;return {x:W/2+dot(q,b.r)*focal/z,y:H/2-dot(q,b.u)*focal/z,z,s:focal/z}}
+
+/* ---------- starfield with gravitational-lensing warp ---------- */
+const stars=[];for(let i=0;i<(MOBILE?520:820);i++){const a=Math.random()*6.283,rr=40+Math.random()*72,yy=(Math.random()-.5)*60;
+ stars.push({p:V(Math.cos(a)*rr,yy,Math.sin(a)*rr),r:.3+Math.random()*1.3,t:Math.random()*6.28})}
+const motes=[];for(let i=0;i<(MOBILE?260:440);i++)motes.push({t:Math.random(),a:Math.random()*6.28,r:.2+Math.random()*1.9,v:.00007+Math.random()*.00016});
+
+/* ---------- path along the throat ---------- */
+function axisPoint(t){ // t 0..1 top->bottom
+ const y=lerp(YTOP,YBOT,t);
+ const damp=Math.sin(t*Math.PI); // spiral fades at both mouths
+ return V(Math.sin(t*11.5)*.5*damp,y,Math.cos(t*9.2)*.34*damp);
+}
+function tForY(y){return clamp((YTOP-y)/(YTOP-YBOT),0,1)}
+// wormhole embedding radius (hyperboloid): flares open at both mouths
+const YMID=(YTOP+YBOT)/2, THROAT=3.05, FLARE=9.5;
+function bridgeRadius(y){return THROAT*Math.sqrt(1+Math.pow((y-YMID)/FLARE,2))}
+
+/* ---------- primitive buffer (painter's algorithm) ---------- */
+let prim=[],hits=[];
+const P_line=(points,color,width=1,alpha=1,dash=null,glow=0)=>prim.push({t:0,points,color,width,alpha,dash,glow,depth:0});
+const P_poly=(points,fill,stroke,width,alpha)=>prim.push({t:1,points,fill,stroke,width,alpha,depth:0});
+const P_dot=(p,r,color,alpha=1,glow=0)=>prim.push({t:2,p,r,color,alpha,glow,depth:0});
+const P_text=(p,lines,color,align='left',key=null,scale=1)=>prim.push({t:3,p,lines,color,align,key,scale,depth:0});
+
+/* ---------- scene ---------- */
+let labelsVisible=true;
+function buildScene(now,b){
+ prim=[];hits=[];
+ const t=now;
+ drawStars(now,b);
+ drawBridgeMembrane(now);
+ drawCosmicArcs(now);
+ drawThroat(now);
+ drawSingularity(now);
+ levels.forEach((L,i)=>drawLevel(L,i,now));
+ drawWatersBracket();
+ drawMaya(now);
+ drawChristhood(now);
+ drawCurrents(now);
+ drawEyes(now);
+ drawSophia(now);
+ drawMotes(now);
+ drawHost(now);
+}
+
+function drawStars(now,b){
+ // screen-space gravitational lensing around the singularity mouth
+ const sing=project(V(0,YTOP,0),b);
+ for(const s of stars){const p=project(s.p,b);if(!p)continue;
+  let x=p.x,y=p.y;
+  if(sing){const dx=x-sing.x,dy=y-sing.y,d=Math.hypot(dx,dy)+1;
+   if(d<260){const pull=Math.min(46,2600/d);const ang=Math.atan2(dy,dx)+ .35*(46/(d+30));
+    x=sing.x+Math.cos(ang)*(d-pull);y=sing.y+Math.sin(ang)*(d-pull);}}
+  const tw=.4+.6*Math.sin(now*.001+s.t)**2;
+  ctx.fillStyle='rgba(232,222,255,'+(.22+.6*tw)+')';
+  ctx.fillRect(x,y,s.r,s.r);}
+}
+function drawBridgeMembrane(now){
+ // faint hyperboloid wireframe = the Einstein–Rosen throat surface
+ const c='#7fa6ff';
+ for(let y=YTOP;y>=YBOT-0.001;y-=1.35){const r=bridgeRadius(y),pts=[];
+  for(let i=0;i<=40;i++){const a=i/40*Math.PI*2+now*.00004;pts.push(V(Math.cos(a)*r,y,Math.sin(a)*r*.9))}
+  P_line(pts,c,.7,.09);}
+ for(let k=0;k<16;k++){const a=k/16*Math.PI*2,pts=[];
+  for(let y=YTOP;y>=YBOT-0.001;y-=1.0){const r=bridgeRadius(y);pts.push(V(Math.cos(a)*r,y,Math.sin(a)*r*.9))}
+  P_line(pts,c,.6,.06);}
+}
+function drawCosmicArcs(now){
+ for(let k=0;k<4;k++){const pts=[];
+  for(let i=0;i<=70;i++){const q=i/70,a=-1.1+q*2.2,rad=17+k*.6;
+   pts.push(V(Math.cos(a)*rad,4+Math.sin(a)*11,Math.sin(a)*5-6))}
+  P_line(pts,k%2?'#6b5cff':'#ff4db9',.6,.14,[5,8]);}
+}
+function drawThroat(now){
+ // bright glowing axis with luminous aura threading every hole
+ const axis=[],auraA=[],auraB=[];
+ for(let i=0;i<=160;i++){const q=i/160,p=axisPoint(q);
+  axis.push(p);
+  auraA.push(add(p,V(-(.3+Math.sin(q*13+now*.001)*.1),0,.06)));
+  auraB.push(add(p,V(.3+Math.cos(q*12+now*.001)*.1,0,-.06)));}
+ P_line(auraA,'#ff88df',2.4,.2);P_line(auraB,'#ffc3f0',2.4,.16);
+ P_line(axis,'#ffe9fb',2.6,.9,null,MOBILE?0:16);
+}
+function drawSingularity(now){
+ const o=V(0,YTOP,0),tilt=-.16;
+ // accretion swirl
+ for(let j=0;j<7;j++){const pts=[];
+  for(let i=0;i<=90;i++){const a=i/90*Math.PI*2+now*.00008*(j%2?1:-1);
+   const r=1.1+j*.5+Math.sin(a*5+now*.002)*.1;
+   let p=V(Math.cos(a)*r,Math.sin(a*3+now*.001)*.12,Math.sin(a)*r*.5);
+   p=wl(p,o,.12,tilt);pts.push(p)}
+  P_line(pts,j<2?'#fff0ed':j<5?'#ff9ecb':'#c45cff',j<2?2.1:1.1,.42+.05*j,null,j<3&&!MOBILE?10:0)}
+ // event horizon (pure black)
+ P_dot(o,.72,'#000000',1,MOBILE?0:30);P_dot(add(o,V(0,0,.02)),.2,'#04030a',1,0);
+ P_text(V(-4.9,YTOP+.5,0),['SINGULARITY ◍','Just Isness'],'#f7f4ff','right','singularity',1.02);
+}
+function drawLevel(L,idx,now){
+ const o=V(Math.sin(idx*.5)*.22,L.y,Math.cos(idx*.45)*.16),ry=Math.sin(idx*.72)*.07,rx=-.10+Math.cos(idx*.6)*.03;
+ // luminous annulus disc
+ const outer=[],inner=[];
+ for(let i=0;i<=88;i++){const a=i/88*Math.PI*2;
+  const warp=Math.sin(a*3+now*.0007+idx)*.06+Math.sin(a*2-now*.0005)*.035;
+  outer.push(wl(V(Math.cos(a)*3.2,warp,Math.sin(a)*3.2*.82),o,ry,rx));
+  inner.push(wl(V(Math.cos(a)*2.35,warp,Math.sin(a)*2.35*.82),o,ry,rx));}
+ P_poly([...outer,...inner.reverse()],rgba(L.color,.13),L.color,1,.95);
+ // concentric light rings
+ for(let j=0;j<5;j++){const pts=[],rr=.7+j*.5;
+  for(let i=0;i<=80;i++){const a=i/80*Math.PI*2+(j%2?now*.00008:-now*.00006);
+   pts.push(wl(V(Math.cos(a)*rr,Math.sin(a*3+now*.001+idx)*.05,Math.sin(a)*rr*.82),o,ry,rx))}
+  P_line(pts,j===0?'#fff7ff':L.color,j===0?1.5:.75,j===0?.8:.4)}
+ // central curvature funnel (the hole the throat passes through)
+ for(let k=0;k<9;k++){const a=k/9*Math.PI*2,pts=[];
+  for(let i=0;i<=14;i++){const q=i/14,rr=lerp(.16,1.05,q),yy=lerp(-.5,.06,q);
+   pts.push(wl(V(Math.cos(a)*rr,yy,Math.sin(a)*rr*.76),o,ry,rx))}
+  P_line(pts,'#fff1ff',.5,.24)}
+ P_dot(o,.12,'#fff9ff',.95,MOBILE?0:12);
+ // orbiting nodes
+ const nc=L.n===8?12:L.n===0?13:7;
+ for(let k=0;k<nc;k++){const a=k/nc*Math.PI*2+now*.0001*(idx%2?1:-1);
+  P_dot(wl(V(Math.cos(a)*2.2,Math.sin(a*2+idx)*.06,Math.sin(a)*1.8),o,ry,rx),.05,k%2?L.color:'#fff0dc',.9,MOBILE?0:4)}
+ drawSymbol(L,o,ry,rx,now);
+ P_text(V(-4.85,L.y+.06,.05),[L.name+'   '+L.n,L.sub||''],L.color,'right','L'+L.n,1);
+}
+function drawSymbol(L,o,ry,rx,now){
+ const G=p=>wl(p,o,ry,rx),c=L.color;
+ if(L.sym==='pleroma'){const pts=[];for(let i=0;i<=60;i++){const a=i/60*Math.PI*2;pts.push(G(V(Math.cos(a)*.6,0,Math.sin(a)*.48)))}
+  P_line(pts,'#ffffff',1.6,.85);P_dot(G(V(0,0,0)),.12,'#fff7ff',1,MOBILE?0:12);}
+ else if(L.sym==='flower'){for(let k=0;k<7;k++){const a=k/6*Math.PI*2;P_dot(G(V(Math.cos(a)*.46,0,Math.sin(a)*.37)),.16,k===6?'#ffffff':'#ffd6ff',.85,MOBILE?0:7)}}
+ else if(L.sym==='time'){const pts=[];for(let i=0;i<=48;i++){const a=i/48*Math.PI*2;pts.push(G(V(Math.cos(a)*.56,0,Math.sin(a)*.45)))}
+  P_line(pts,'#e8e5ff',1,.85);
+  P_line([G(V(0,0,0)),G(V(Math.cos(now*.001)*.48,0,Math.sin(now*.001)*.38))],'#fff',1.2,.9);
+  P_line([G(V(0,0,0)),G(V(Math.cos(-now*.0004+1)*.3,0,Math.sin(-now*.0004+1)*.24))],'#fff',1,.8);}
+ else if(L.sym==='law'){[-1.15,1.15].forEach(x=>{P_line([G(V(x,-.26,0)),G(V(x,.3,0))],'#dce8ff',1,.8);
+  P_line([G(V(x-.36,.18,0)),G(V(x+.36,.18,0))],'#dce8ff',1,.8);
+  P_line([G(V(x-.22,.18,0)),G(V(x-.33,-.13,0))],'#dce8ff',.8,.8);
+  P_line([G(V(x+.22,.18,0)),G(V(x+.33,-.13,0))],'#dce8ff',.8,.8);});
+  P_line([G(V(-1.15,.3,0)),G(V(1.15,.3,0))],'#dce8ff',.8,.7);}
+ else if(L.sym==='being'){P_line([G(V(0,.5,0)),G(V(.5,0,0)),G(V(0,-.5,0)),G(V(-.5,0,0)),G(V(0,.5,0))],'#b7ecff',1,.9);P_dot(G(V(0,0,0)),.08,'#fff',1,MOBILE?0:8);}
+ else if(L.sym==='form'){wireCube(G,V(-1,0,0),.38);wireTetra(G,V(0,0,.1),.44);wireOcta(G,V(1,0,0),.42);}
+ else if(L.sym==='causal'){for(let k=0;k<5;k++){const a=k/5*Math.PI*2,pts=[];
+  for(let i=0;i<=16;i++){const q=i/16;pts.push(G(V(Math.cos(a)*q*1.35,Math.sin(q*Math.PI)*.08,Math.sin(a)*q*1.05)))}P_line(pts,'#ffe1a2',.8,.72)}
+  P_dot(G(V(0,0,0)),.09,'#fff4ca',1,MOBILE?0:8);}
+ else if(L.sym==='astral'){for(let k=0;k<6;k++){const a=k/6*Math.PI*2+now*.00025;
+  P_dot(G(V(Math.cos(a)*1.05,Math.sin(a*3)*.07,Math.sin(a)*.72)),.08,k%2?'#fff1ff':c,.9,MOBILE?0:6)}}
+ else if(L.sym==='life'){const p1=[],p2=[];for(let i=0;i<=34;i++){const q=i/34,a=q*Math.PI*4;
+  p1.push(G(V((q-.5)*1.5,Math.sin(a+now*.002)*.16,Math.cos(a)*.22)));
+  p2.push(G(V((q-.5)*1.5,-Math.sin(a+now*.002)*.16,-Math.cos(a)*.22)))}
+  P_line(p1,'#ffd5ff',1,.8);P_line(p2,c,1,.8);}
+ else if(L.sym==='matter'){const pts=[V(-.55,0,-.25),V(0,0,.35),V(.55,0,-.25),V(-.28,0,.15),V(.28,0,.15)];
+  pts.forEach((p,i)=>P_dot(G(p),.085,i%2?'#fff1cc':'#ffd46a',.95,MOBILE?0:5));
+  for(let i=0;i<pts.length-1;i++)P_line([G(pts[i]),G(pts[i+1])],'#ffc468',.6,.6);}
+}
+function wireCube(G,p,s){const v=[];for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1])v.push(add(p,V(x*s,y*s*.55,z*s*.65)));
+ [[0,1],[0,2],[0,4],[1,3],[1,5],[2,3],[2,6],[3,7],[4,5],[4,6],[5,7],[6,7]].forEach(e=>P_line([G(v[e[0]]),G(v[e[1]])],'#c9fff0',.7,.72))}
+function wireTetra(G,p,s){const v=[V(0,s,0),V(-s,-s*.45,-s*.6),V(s,-s*.45,-s*.6),V(0,-s*.45,s*.75)].map(x=>add(p,x));
+ [[0,1],[0,2],[0,3],[1,2],[2,3],[3,1]].forEach(e=>P_line([G(v[e[0]]),G(v[e[1]])],'#c9fff0',.7,.72))}
+function wireOcta(G,p,s){const v=[V(0,s,0),V(0,-s,0),V(s,0,0),V(-s,0,0),V(0,0,s),V(0,0,-s)].map(x=>add(p,x));
+ for(const a of[0,1])for(const bb of[2,3,4,5])P_line([G(v[a]),G(v[bb])],'#c9fff0',.7,.72);
+ P_line([G(v[2]),G(v[4]),G(v[3]),G(v[5]),G(v[2])],'#c9fff0',.7,.72)}
+
+function drawWatersBracket(){
+ P_line([V(4.7,10.4,0),V(5.6,10.4,0),V(5.6,-0.5,0),V(4.7,-0.5,0)],'#7e9eff',1.2,.65);
+ P_text(V(5.85,4.9,0),['Waters /','Depths'],'#9cb6ff','left','waters',.92);
+ P_text(V(5.75,-3.1,0),['Intellect'],'#e994ff','left',null,.9);
+ P_text(V(5.75,-5.75,0),['Luna ☽'],'#ef86ff','left',null,.9);
+ P_text(V(5.75,-8.45,0),['• Fall'],'#ffd15b','left',null,.9);
+}
+function drawMaya(now){const y=special.projection.y;
+ for(let j=0;j<5;j++){const pts=[],r=.7+j*.55;
+  for(let i=0;i<=76;i++){const a=i/76*Math.PI*2+now*.00005*(j%2?1:-1);
+   pts.push(V(Math.cos(a)*r,y+Math.sin(a*3+now*.001)*.04,Math.sin(a)*r*.72))}
+  P_line(pts,j===4?'#ffd6a2':'#f69cff',j===4?1:.6,j===4?.5:.26,j===4?[3,4]:null)}
+ P_text(V(-4.85,y+.1,0),['Projection','Maya'],'#d8d6f3','right','projection',.96);
+ P_text(V(-4.85,special.connected.y,0),['Connected'],'#efb5ea','right','connected',.96);
+}
+function drawChristhood(now){
+ const o=V(0,special.christ.y,0),s=2.0,rot=now*.0002;
+ // star tetrahedron (merkaba)
+ const up=[V(0,s,0),V(-s*.9,-s*.5,-s*.5),V(s*.9,-s*.5,-s*.5),V(0,-s*.5,s*1.0)];
+ const dn=[V(0,-s,0),V(-s*.9,s*.5,s*.5),V(s*.9,s*.5,s*.5),V(0,s*.5,-s*1.0)];
+ const R=p=>add(o,rotY(p,rot));
+ const teE=[[0,1],[0,2],[0,3],[1,2],[2,3],[3,1]];
+ teE.forEach(e=>{P_line([R(up[e[0]]),R(up[e[1]])],'#ffd76e',1.1,.8);P_line([R(dn[e[0]]),R(dn[e[1]])],'#ff9be3',1.1,.7)});
+ // crystalline shell
+ const shell=[];for(let i=0;i<12;i++){const a=i/12*Math.PI*2;shell.push(add(o,V(Math.cos(a)*2.4,Math.sin(a)*3.0,Math.sin(a*2)*.55)))}
+ for(let i=0;i<12;i++){P_line([shell[i],shell[(i+1)%12]],'#ff9be3',.7,.4);}
+ // pink cross (from the drawing)
+ const top=add(o,V(0,2.3,0)),bot=add(o,V(0,-2.3,0)),lft=add(o,V(-1.5,.25,0)),rgt=add(o,V(1.5,.25,0));
+ P_line([top,bot],'#ffe2fb',2.4,.92);P_line([lft,rgt],'#ffe2fb',2.4,.92);
+ P_line([top,rgt,bot,lft,top],'#ff6fd8',1.3,.85);
+ [up[0],dn[0]].forEach(p=>P_dot(R(p),.13,'#ffd76e',1,MOBILE?0:9));
+ [top,bot,lft,rgt].forEach(p=>P_dot(p,.12,'#ffd76e',1,MOBILE?0:7));
+ P_dot(o,.3,'#ff4cbb',.8,MOBILE?0:18);
+ P_text(V(-4.85,special.christ.y+.05,0),['Christhood ▣','Return'],'#ff8edc','right','christ',1);
+}
+function drawCurrents(now){
+ const yb=-15.6,left=[],right=[];
+ for(let i=0;i<=52;i++){const q=i/52;
+  left.push(V(lerp(-1.9,-9.6,q),yb-Math.sin(q*Math.PI)*2.2,Math.sin(q*7+now*.001)*.3));
+  right.push(V(lerp(1.9,9.6,q),yb-Math.sin(q*Math.PI)*2.0,Math.sin(q*7-now*.001)*.3))}
+ P_line(left,'#4f94ff',2,.78);P_line(right,'#ff486c',2,.78);
+ for(let k=0;k<5;k++){const y=yb-.2-k*.5;
+  P_line([V(-8.4,y,0),V(-9.8,y-.13,0)],'#8db5ff',1,.6);P_dot(V(-9.4-k*.28,y-.2,0),.07,'#8db5ff',.7,0);
+  P_line([V(8.4,y,0),V(9.8,y-.13,0)],'#ff8094',1,.6);P_dot(V(9.4+k*.28,y-.2,0),.07,'#ff8094',.7,0);}
+ P_text(V(-10.4,yb-.1,0),['◄ Sata'],'#69a7ff','left','sata',1);
+ P_text(V(9.0,yb-.1,0),['Luci ►'],'#ff6e87','left','luci',1);
+}
+function eyeShape(o,s,c){const top=[],bot=[];
+ for(let i=0;i<=34;i++){const q=i/34,x=(q-.5)*2*s,y=Math.sin(q*Math.PI)*s*.36;top.push(add(o,V(x,y,0)));bot.push(add(o,V(x,-y,0)))}
+ P_line(top,c,1.1,.85);P_line(bot,c,1.1,.85);
+ for(let k=0;k<8;k++){const a=k/8*Math.PI*2;P_line([add(o,V(Math.cos(a)*s*.16,Math.sin(a)*s*.16,0)),add(o,V(Math.cos(a)*s*.3,Math.sin(a)*s*.3,0))],c,.7,.6)}
+ P_dot(o,s*.14,'#f7f2ff',.95,MOBILE?0:6);P_dot(add(o,V(0,0,.01)),s*.07,'#080a15',1,0)}
+function drawEyes(now){
+ eyeShape(V(8.4,11.8,1.2),.9,'#f6efff');
+ eyeShape(V(0,-18.6,1.0),.72,'#f6efff');
+ const pts=[];for(let i=0;i<=40;i++){const q=i/40;pts.push(V(lerp(7.6,.9,q),lerp(11.2,13.6,q)-Math.sin(q*Math.PI)*2.4,lerp(1.2,.1,q)))}
+ P_line(pts,'#ff5cb7',1,.5,[4,6]);
+ P_text(V(8.4,10.4,1.2),['Witness ◉'],'#f8f2ff','center','eye',.9);
+}
+function drawSophia(now){const o=V(0,YBOT,0);
+ for(let j=0;j<3;j++){const pts=[],r=.5+j*.45;for(let i=0;i<=50;i++){const a=i/50*Math.PI*2;pts.push(add(o,V(Math.cos(a)*r,0,Math.sin(a)*r*.7)))}P_line(pts,'#ff9de7',.9,.4)}
+ P_dot(o,.14,'#ff9de7',1,MOBILE?0:9);
+ P_line([V(0,special.christ.y-3.0,0),o],'#ff9de7',1,.5,[3,5]);
+ P_text(V(0,YBOT-.9,0),['SOPHIA XT','Return Vector'],'#ff9de7','center','sophia',.86);
+}
+function drawMotes(now){
+ for(const m of motes){m.t=(m.t+m.v*16.67)%1;const p=axisPoint(m.t),a=m.a+now*.0016+m.t*15,rr=m.r*(.3+.7*Math.sin(Math.PI*m.t));
+  P_dot(add(p,V(Math.cos(a)*rr,Math.sin(a*.6)*.05,Math.sin(a)*rr)),.026,'#ffd8fa',.35+.5*Math.sin(m.t*Math.PI),MOBILE?0:5)}
+}
+
+/* ---------- Temporary Host ---------- */
+const host={active:false,s:0,vel:0,auto:true,dir:1,follow:true,trail:[]};
+function nearestLevel(y){let best=levels[0],bd=1e9;for(const L of levels){const d=Math.abs(L.y-y);if(d<bd){bd=d;best=L}}
+ // include special mouths
+ let sp=null;if(y>levels[0].y+1.0)sp=special.singularity;else if(y<special.christ.y+1.2&&y>special.sophia.y+1.0)sp=special.christ;else if(y<=special.sophia.y+1.0)sp=special.sophia;
+ return sp||best;}
+function drawHost(now){
+ if(!host.active)return;
+ const p=axisPoint(host.s);
+ // trail
+ host.trail.push({x:p.x,y:p.y,z:p.z});if(host.trail.length>46)host.trail.shift();
+ if(host.trail.length>1)P_line(host.trail.map(q=>V(q.x,q.y,q.z)),'#8ff0ff',1.6,.5);
+ // aura shells
+ for(let j=0;j<3;j++){const pts=[],r=.32+j*.18;for(let i=0;i<=26;i++){const a=i/26*Math.PI*2+now*.002*(j%2?1:-1);
+  pts.push(add(p,V(Math.cos(a)*r,Math.sin(a*3+now*.003)*.08,Math.sin(a)*r)))}P_line(pts,'#65e6ff',1,.55-j*.14)}
+ // spinning inner tetra
+ const s=.3,rot=now*.004;const R=q=>add(p,rotY(rotX(q,rot*.7),rot));
+ const v=[V(0,s,0),V(-s,-s*.5,-s*.6),V(s,-s*.5,-s*.6),V(0,-s*.5,s*.8)];
+ [[0,1],[0,2],[0,3],[1,2],[2,3],[3,1]].forEach(e=>P_line([R(v[e[0]]),R(v[e[1]])],'#eaffff',1,.9));
+ P_dot(p,.16,'#eafdff',1,MOBILE?0:20);P_dot(p,.07,'#ffffff',1,0);
+ P_text(add(p,V(.55,.2,0)),['◆ Host'],'#bff2ff','left',null,.86);
+}
+
+/* ---------- render ---------- */
+function prep(P,b){
+ if(P.t===0||P.t===1){const pts=[];let dz=0;for(const w of P.points){const p=project(w,b);if(!p)continue;pts.push(p);dz+=p.z}
+  if(pts.length<2)return;P.depth=dz/pts.length;P._p=pts;}
+ else{const p=project(P.p,b);if(!p)return;P.depth=p.z;P._p=p}
+ return P;
+}
+function paint(P){
+ ctx.save();
+ if(P.t===0){const pts=P._p;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.strokeStyle=rgba(P.color,P.alpha);ctx.lineWidth=P.width;ctx.lineJoin='round';ctx.lineCap='round';
+  if(P.dash)ctx.setLineDash(P.dash);if(P.glow){ctx.shadowBlur=P.glow;ctx.shadowColor=P.color}ctx.stroke();}
+ else if(P.t===1){const pts=P._p;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.closePath();
+  ctx.globalAlpha=P.alpha;ctx.fillStyle=P.fill;ctx.fill();if(P.stroke){ctx.strokeStyle=P.stroke;ctx.lineWidth=P.width;ctx.stroke()}}
+ else if(P.t===2){const p=P._p,r=Math.max(.5,P.r*p.s);if(P.glow){ctx.shadowBlur=P.glow;ctx.shadowColor=P.color}
+  ctx.globalAlpha=P.alpha;ctx.fillStyle=P.color;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();}
+ else if(P.t===3&&labelsVisible){const p=P._p,sc=clamp(p.s*.055,.72,1.15)*P.scale;
+  ctx.textAlign=P.align;ctx.textBaseline='middle';ctx.fillStyle=P.color;ctx.shadowColor='rgba(0,0,0,.95)';ctx.shadowBlur=8;
+  ctx.font='600 '+Math.round(14*sc)+'px Inter,system-ui,sans-serif';
+  let y=p.y-(P.lines.length-1)*8*sc,maxW=0;
+  for(let i=0;i<P.lines.length;i++){const line=P.lines[i];if(!line)continue;ctx.fillText(line,p.x,y+i*16*sc);maxW=Math.max(maxW,ctx.measureText(line).width)}
+  if(P.key)hits.push({key:P.key,x:P.align==='center'?p.x-maxW/2:P.align==='left'?p.x:p.x-maxW,y:p.y-16*sc,w:maxW,h:Math.max(28,P.lines.length*18*sc)})}
+ ctx.restore();
+}
+
+/* ---------- info panel ---------- */
+function setInfo(key){
+ const num=$('num'),title=$('title'),kicker=$('kicker'),es=$('es'),ph=$('ph');
+ if(!key||key==='overview'){
+  num.textContent='ER';title.textContent='Einstein–Rosen Bridge';kicker.textContent='a traversable descent from source to matter';
+  es.innerHTML='A wormhole strung between two mouths: the <b>Singularity</b> above (undifferentiated source) and the <b>Return</b> mouth below. Each glowing disc is one emanation plane — a cross-section of the throat.';
+  ph.innerHTML='<b>Physics ·</b> An Einstein–Rosen bridge joins two regions of spacetime through a throat; ER = EPR relates such bridges to quantum entanglement. Here it is the axis of emanation and return.';return;}
+ let d;if(key[0]==='L')d=levels.find(x=>'L'+x.n===key);else d=special[key];
+ if(!d)return;
+ num.textContent=(d.n!==undefined)?d.n:'✶';
+ title.textContent=d.name;kicker.textContent=d.sub||'symbolic focus';
+ es.textContent=d.es;ph.innerHTML='<b>Physics ·</b> '+d.ph;
+}
+
+/* ---------- tour (camera journey) ---------- */
+let autoplay=true,tourIdx=0,tourPhase=0,tourClock=0,last=performance.now();
+const stops=[{key:'overview',p:V(0,-1.5,0),dist:52},{key:'singularity',p:V(0,YTOP,0),dist:19},
+ ...levels.map(L=>({key:'L'+L.n,p:V(0,L.y,0),dist:15})),
+ {key:'projection',p:V(0,special.projection.y,0),dist:16},{key:'christ',p:V(0,special.christ.y,0),dist:18},
+ {key:'sophia',p:V(0,YBOT,0),dist:18}];
+function focusStop(key){const s=stops.find(x=>x.key===key);if(!s)return;autoplay=false;$('tour').classList.remove('on');
+ camGoal.target={...s.p};camGoal.dist=s.dist;camGoal.pitch=.06;setInfo(key)}
+function showAll(){autoplay=false;$('tour').classList.remove('on');host.follow=false;
+ camGoal.target=V(0,-1.5,0);camGoal.dist=52;camGoal.pitch=.04;camGoal.yaw=0;setInfo('overview')}
+function updateTour(dt,now){if(!autoplay)return;tourClock+=dt;const s=stops[tourIdx];
+ camGoal.target=lerpV(camGoal.target,s.p,.03);camGoal.yaw=now*.00007+tourIdx*.22;camGoal.pitch=.05+Math.sin(now*.0003)*.025;
+ camGoal.dist=s.dist+(tourPhase===0&&s.key!=='overview'?8:0);
+ if(tourClock>3.2&&tourPhase===0){tourPhase=1;tourClock=0;setInfo(s.key)}
+ else if(tourClock>3&&tourPhase===1){tourPhase=0;tourClock=0;tourIdx=(tourIdx+1)%stops.length}}
+
+/* ---------- host controls ---------- */
+function hostState(){const p=axisPoint(host.s),L=nearestLevel(p.y);
+ const isSp=L.n===undefined;
+ $('hstate').innerHTML='Host at <b>'+L.name+'</b>'+(isSp?'':' · plane '+L.n);
+ setInfo(L===special.singularity?'singularity':L===special.christ?'christ':L===special.sophia?'sophia':(L.n!==undefined?'L'+L.n:'host'));
+ $('hslider').value=Math.round(host.s*1000);}
+function incarnate(){host.active=true;host.auto=true;host.dir=1;host.follow=true;host.trail=[];host.s=0.001;
+ autoplay=false;$('tour').classList.remove('on');
+ $('host').classList.add('on');$('host').textContent='Recall Host';
+ $('hostbar').classList.add('show');$('info').classList.add('hostmode');
+ $('hplay').classList.add('on');$('hplay').textContent='Descend ▾';
+ $('hfollow').classList.add('on');hostState();}
+function recall(){host.active=false;host.follow=false;
+ $('host').classList.remove('on');$('host').textContent='Incarnate Host';
+ $('hostbar').classList.remove('show');$('info').classList.remove('hostmode');
+ showAll();}
+function toggleHost(){host.active?recall():incarnate();}
+
+/* ---------- input ---------- */
+let pointers=new Map(),dragMode=null,dragStart=null,camStart=null,pinchStart=null,downXY=null,moved=false;
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ autoplay=false;$('tour').classList.remove('on');downXY={x:e.clientX,y:e.clientY};moved=false;
+ if(pointers.size===1){dragMode=e.button===2?'pan':'orbit';dragStart={x:e.clientX,y:e.clientY};camStart={yaw:camGoal.yaw,pitch:camGoal.pitch,target:{...camGoal.target}}}
+ else if(pointers.size===2){const a=[...pointers.values()];pinchStart={d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),dist:camGoal.dist}}});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(downXY&&Math.hypot(e.clientX-downXY.x,e.clientY-downXY.y)>6)moved=true;
+ if(pointers.size===1&&dragStart){const dx=e.clientX-dragStart.x,dy=e.clientY-dragStart.y;
+  if(dragMode==='orbit'){camGoal.yaw=camStart.yaw-dx*.006;camGoal.pitch=clamp(camStart.pitch+dy*.0045,-1.25,1.25)}
+  else{const bb=basis(),scale=camGoal.dist/Math.min(W,H)*1.25;camGoal.target=add(camStart.target,add(mul(bb.r,-dx*scale),mul(bb.u,dy*scale)));host.follow=false}}
+ else if(pointers.size===2&&pinchStart){const a=[...pointers.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+  camGoal.dist=clamp(pinchStart.dist*pinchStart.d/Math.max(10,d),8,98)}});
+function endPointer(e){const wasSingle=pointers.size===1;pointers.delete(e.pointerId);
+ if(!pointers.size){dragStart=null;pinchStart=null;if(wasSingle&&!moved)clickHit(e.clientX,e.clientY)}
+ else if(pointers.size===1){const a=[...pointers.values()][0];dragStart={...a};camStart={yaw:camGoal.yaw,pitch:camGoal.pitch,target:{...camGoal.target}}}}
+canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',endPointer);
+canvas.addEventListener('wheel',e=>{e.preventDefault();autoplay=false;$('tour').classList.remove('on');
+ camGoal.dist=clamp(camGoal.dist*Math.exp(e.deltaY*.0011),8,98)},{passive:false});
+function clickHit(x,y){for(let i=hits.length-1;i>=0;i--){const h=hits[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){focusStop(h.key);return}}}
+
+/* ---------- buttons ---------- */
+$('host').onclick=toggleHost;
+$('tour').onclick=()=>{autoplay=!autoplay;$('tour').classList.toggle('on',autoplay);if(autoplay){host.follow=false;tourClock=0}};
+$('all').onclick=showAll;
+$('minus').onclick=()=>{autoplay=false;camGoal.dist=clamp(camGoal.dist*1.22,8,98)};
+$('plus').onclick=()=>{autoplay=false;camGoal.dist=clamp(camGoal.dist*.82,8,98)};
+$('labels').onclick=e=>{labelsVisible=!labelsVisible;e.currentTarget.classList.toggle('on',labelsVisible)};
+$('legendBtn').onclick=e=>{const l=$('legend');const show=l.style.display!=='block';l.style.display=show?'block':'none';e.currentTarget.classList.toggle('on',show)};
+$('full').onclick=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(_){}};
+$('hplay').onclick=e=>{host.auto=!host.auto;e.currentTarget.classList.toggle('on',host.auto);e.currentTarget.textContent=host.auto?(host.dir>0?'Descend ▾':'Ascend ▴'):'Paused ⏸'};
+$('hfollow').onclick=e=>{host.follow=!host.follow;e.currentTarget.classList.toggle('on',host.follow)};
+$('hrecall').onclick=recall;
+$('hslider').oninput=e=>{host.s=clamp(e.target.value/1000,0,1);host.follow=true;host.trail=[];hostState()};
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();
+ if(e.code==='Space'){e.preventDefault();$('tour').click()}
+ else if(k==='h')toggleHost();else if(k==='a')showAll();else if(k==='l')$('labels').click();else if(k==='f')$('full').click()});
+
+/* ---------- main loop ---------- */
+function frame(now){
+ const dt=Math.min((now-last)/1000,.05);last=now;
+ updateTour(dt,now);
+ if(host.active&&host.auto){host.s+=host.dir*dt*.055;
+  if(host.s>=1){host.s=1;host.dir=-1;$('hplay').textContent='Ascend ▴'}
+  else if(host.s<=0){host.s=0;host.dir=1;$('hplay').textContent='Descend ▾'}
+  hostState();}
+ if(host.active&&host.follow){const p=axisPoint(host.s);camGoal.target=lerpV(camGoal.target,p,.08);
+  camGoal.dist=lerp(camGoal.dist,15,.05);camGoal.pitch=lerp(camGoal.pitch,.05,.05)}
+ camera.yaw=lerp(camera.yaw,camGoal.yaw,.06);camera.pitch=lerp(camera.pitch,camGoal.pitch,.06);
+ camera.dist=lerp(camera.dist,camGoal.dist,.07);camera.target=lerpV(camera.target,camGoal.target,.07);
+
+ const g=ctx.createRadialGradient(W*.5,H*.32,0,W*.5,H*.5,Math.max(W,H)*.72);
+ g.addColorStop(0,'#180a2e');g.addColorStop(.4,'#080a1c');g.addColorStop(1,'#02030a');
+ ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ const b=basis();buildScene(now,b);
+ const ready=[];for(const P of prim){const q=prep(P,b);if(q)ready.push(q)}
+ ready.sort((a,b)=>b.depth-a.depth);
+ ctx.globalCompositeOperation='lighter';
+ for(const P of ready){if(P.t===3||P.t===1){ctx.globalCompositeOperation='source-over';paint(P);ctx.globalCompositeOperation='lighter'}else paint(P)}
+ ctx.globalCompositeOperation='source-over';
+ requestAnimationFrame(frame);
+}
+setInfo('overview');autoplay=true;$('tour').classList.add('on');requestAnimationFrame(frame);
+}catch(err){console.error(err);const e=document.getElementById('error');if(e){e.style.display='grid';document.getElementById('errorText').textContent=String(err&&err.stack||err)}}
+</script>
+</body>
+</html>
